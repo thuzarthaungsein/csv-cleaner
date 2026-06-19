@@ -7,6 +7,10 @@ export interface CleanResult {
     rowCountAfter: number
 }
 
+function quoteIdent(identifier: string): string {
+    return `"${identifier.replace(/"/g, '""')}"`
+}
+
 export async function cleanCsv(filePath: string, outputDir: string): Promise<CleanResult> {
     const db = await Database.create(":memory:")
 
@@ -28,20 +32,24 @@ export async function cleanCsv(filePath: string, outputDir: string): Promise<Cle
         const selectParts = columnNames.map((column) => {
             const lower = column.toLowerCase()
             const isVarchar = columnTypes.get(column) === "VARCHAR"
+            const quoted = quoteIdent(column)
             if (lower.includes("email")) {
-                return `NULLIF(LOWER(TRIM("${column}")), '') AS "${column}"`
+                return isVarchar
+                    ? `NULLIF(LOWER(TRIM(${quoted})), '') AS ${quoted}`
+                    : quoted
             }
             if (lower.includes("date")) {
                 return isVarchar
-                    ? `TRY_CAST(TRIM("${column}") AS DATE) AS "${column}"`
-                    : `"${column}"`
+                    ? `TRY_CAST(TRIM(${quoted}) AS DATE) AS ${quoted}`
+                    : quoted
             }
             return isVarchar
-                ? `NULLIF(TRIM("${column}"), '') AS "${column}"`
-                : `"${column}"`
+                ? `NULLIF(TRIM(${quoted}), '') AS ${quoted}`
+                : quoted
         })
 
         const dedupeKey = columnNames.includes("id") ? "id" : columnNames[0]
+        const quotedDedupeKey = quoteIdent(dedupeKey)
 
         const baseName = basename(filePath, extname(filePath))
         const outputPath = join(outputDir, `${baseName}_cleaned.csv`)
@@ -49,9 +57,9 @@ export async function cleanCsv(filePath: string, outputDir: string): Promise<Cle
 
         await db.exec(`
             COPY (
-                SELECT DISTINCT ON ("${dedupeKey}") ${selectParts.join(", ")}
+                SELECT DISTINCT ON (${quotedDedupeKey}) ${selectParts.join(", ")}
                 FROM read_csv_auto('${escapedInput}')
-                ORDER BY "${dedupeKey}"
+                ORDER BY ${quotedDedupeKey}
             ) TO '${escapedOutput}' (HEADER, DELIMITER ',')
         `)
 
