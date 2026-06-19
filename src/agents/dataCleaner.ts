@@ -17,11 +17,19 @@ export async function runPipeline(
     filePath: string,
     countryCache: Map<string, CountryRecord>,
 ): Promise<PipelineResult> {
+    // No job id exists yet, so a createJob failure cannot be recorded via failJob.
+    // Callers (e.g. the future upload route) should expect runPipeline to potentially reject if job creation itself fails.
     const job = await createJob(basename(filePath))
 
     try {
         const validation = await validateCsv(filePath)
         await updateJobStatus(job.id, "validated")
+
+        if (!validation.valid) {
+            const message = `validation failed: ${JSON.stringify(validation.errors)}`
+            await failJob(job.id, message)
+            return { jobId: job.id, status: "failed", errorMessage: message }
+        }
 
         const cleanResult = await cleanCsv(filePath, OUTPUT_DIR)
         await updateJobStatus(job.id, "cleaned")
@@ -34,7 +42,7 @@ export async function runPipeline(
         await completeJob(job.id, {
             rowCountBefore: validation.rowCount,
             rowCountAfter: cleanResult.rowCountAfter,
-            enrichedApi: enrichResult.enriched ? "restcountries.com/v3.1" : null,
+            enrichedApi: enrichResult.enriched ? "mledoze/countries" : null,
             enrichedColumns: enrichResult.enrichedColumns,
             skippedRows: enrichResult.skippedRows,
         })
@@ -42,7 +50,11 @@ export async function runPipeline(
         return { jobId: job.id, status: "done" }
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        await failJob(job.id, message)
+        try {
+            await failJob(job.id, message)
+        } catch (secondaryError) {
+            console.error("failJob threw while handling pipeline error:", secondaryError)
+        }
         return { jobId: job.id, status: "failed", errorMessage: message }
     }
 }
