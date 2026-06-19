@@ -33,9 +33,9 @@ export function buildCountryCache(countries: CountryRecord[]): Map<string, Count
 
 export async function fetchCountryCache(): Promise<Map<string, CountryRecord>> {
     try {
-        const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,cca3,region")
+        const response = await fetch("https://raw.githubusercontent.com/mledoze/countries/master/countries.json")
         if (!response.ok) {
-            console.warn(`restcountries fetch failed with status ${response.status}; enrichment disabled`)
+            console.warn(`country data fetch failed with status ${response.status}; enrichment disabled`)
             return new Map()
         }
         const data = (await response.json()) as Array<{
@@ -52,7 +52,7 @@ export async function fetchCountryCache(): Promise<Map<string, CountryRecord>> {
         }))
         return buildCountryCache(countries)
     } catch (error) {
-        console.warn("restcountries fetch threw; enrichment disabled:", error)
+        console.warn("country data fetch threw; enrichment disabled:", error)
         return new Map()
     }
 }
