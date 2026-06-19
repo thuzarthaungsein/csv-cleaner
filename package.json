@@ -1,0 +1,24 @@
+{
+    "name": "csv-cleaner",
+    "version": "1.0.0",
+    "description": "Hono + TypeScript ETL API: upload, validate, clean, enrich, report CSV data",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/index.ts",
+        "build": "tsc -p tsconfig.json",
+        "start": "node dist/index.js",
+        "test": "tsx --test test/**/*.test.ts"
+    },
+    "dependencies": {
+        "@hono/node-server": "1.14.4",
+        "duckdb-async": "1.4.2",
+        "hono": "4.12.26",
+        "pg": "8.22.0"
+    },
+    "devDependencies": {
+        "@types/node": "22.10.2",
+        "@types/pg": "8.11.10",
+        "tsx": "4.22.4",
+        "typescript": "5.7.2"
+    }
+}
