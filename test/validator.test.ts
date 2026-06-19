@@ -25,3 +25,12 @@ test("validateCsv detects nulls, duplicate ids, and type mismatch", async () => 
     const typeWarning = result.warnings.find((w) => w.column === "signup_date" && w.issue === "type_mismatch")
     assert.ok(typeWarning, "expected a type_mismatch warning for signup_date column")
 })
+
+test("validateCsv reports an error when a required column is missing entirely", async () => {
+    const result = await validateCsv("test/fixtures/missing-column.csv")
+    assert.equal(result.valid, false)
+
+    const missingError = result.errors.find((e) => e.column === "email" && e.issue === "missing_column")
+    assert.ok(missingError, "expected a missing_column error for email column")
+    assert.equal(missingError?.count, 0)
+})
