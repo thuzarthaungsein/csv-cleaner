@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: csv_cleaner_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: csv_cleaner
+    ports:
+      - "5432:5432"
+    volumes:
+      - csv_cleaner_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: csv_cleaner_app
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: 3000
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  csv_cleaner_data:

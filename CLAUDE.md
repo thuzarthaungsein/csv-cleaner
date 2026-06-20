@@ -67,3 +67,17 @@ After each feature:
 1. Run code-reviewer agent (ETL architecture check)
 2. Run code-review plugin (general quality check)
 3. Use commit-commands plugin to format and commit
+
+## README
+
+Always keep README.md up to date when:
+
+- A new feature is implemented
+- The ETL pipeline flow changes
+
+README.md must include:
+
+- Project overview and ETL pipeline diagram
+- Setup instructions with exact commands
+- curl examples for every endpoint
+- Environment variables table
