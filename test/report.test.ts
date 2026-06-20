@@ -25,6 +25,19 @@ test("GET /report/:id renders status banner for a pending job", async () => {
     assert.ok(!html.includes("Chart("))
 })
 
+test("GET /report/:id escapes HTML-dangerous filenames", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("<script>alert(1)</script>.csv")
+
+    const res = await app.request(`/report/${job.id}`)
+    const html = await res.text()
+    assert.equal(res.status, 200)
+    assert.ok(!html.includes("<script>alert(1)</script>"))
+    assert.ok(html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"))
+})
+
 test("GET /report/:id renders charts and summary table for a done job", async () => {
     const app = new Hono()
     app.route("/report", buildReportRoute())
