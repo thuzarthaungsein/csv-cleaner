@@ -1,4 +1,5 @@
 import { basename } from "node:path"
+import { mkdir } from "node:fs/promises"
 import { validateCsv } from "../services/validator.js"
 import { cleanCsv } from "../services/cleaner.js"
 import { enrichCsv } from "../services/enricher.js"
@@ -31,6 +32,7 @@ export async function runPipeline(
             return { jobId: job.id, status: "failed", errorMessage: message }
         }
 
+        await mkdir(OUTPUT_DIR, { recursive: true })
         const cleanResult = await cleanCsv(filePath, OUTPUT_DIR)
         await updateJobStatus(job.id, "cleaned")
 

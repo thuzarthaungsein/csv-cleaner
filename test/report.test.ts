@@ -58,3 +58,23 @@ test("GET /report/:id renders charts and summary table for a done job", async ()
     assert.ok(html.includes("Chart("))
     assert.ok(html.includes("tailwindcss"))
 })
+
+test("GET /report/:id shows not-enriched message instead of a misleading coverage chart", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("no_country_job.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 10,
+        rowCountAfter: 8,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+    })
+
+    const res = await app.request(`/report/${job.id}`)
+    const html = await res.text()
+    assert.equal(res.status, 200)
+    assert.ok(html.includes("Not enriched (no country column detected)"))
+    assert.ok(!html.includes("coverageChart"))
+})

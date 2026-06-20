@@ -39,7 +39,8 @@ function renderDone(job: Job): string {
     const rowBefore = job.row_count_before ?? 0
     const rowAfter = job.row_count_after ?? 0
     const skipped = job.skipped_rows ?? 0
-    const coverage = rowAfter > 0 ? Math.round(((rowAfter - skipped) / rowAfter) * 100) : 0
+    const wasEnriched = job.enriched_columns !== null
+    const coverage = wasEnriched && rowAfter > 0 ? Math.round(((rowAfter - skipped) / rowAfter) * 100) : 0
     const enrichedColumns = escapeHtml(job.enriched_columns ?? "none")
 
     return `<!DOCTYPE html>
@@ -69,7 +70,9 @@ function renderDone(job: Job): string {
             <canvas id="rowCountChart"></canvas>
         </div>
         <div class="bg-white rounded-lg shadow p-4">
-            <canvas id="coverageChart"></canvas>
+            ${wasEnriched
+                ? `<canvas id="coverageChart"></canvas>`
+                : `<p class="text-gray-500 italic">Not enriched (no country column detected)</p>`}
         </div>
     </div>
 
@@ -81,14 +84,16 @@ function renderDone(job: Job): string {
                 datasets: [{ label: "Row count", data: [${rowBefore}, ${rowAfter}], backgroundColor: ["#94a3b8", "#3b82f6"] }],
             },
         })
-        new Chart(document.getElementById("coverageChart"), {
+        ${wasEnriched
+            ? `new Chart(document.getElementById("coverageChart"), {
             type: "bar",
             data: {
                 labels: ["Enrichment coverage %"],
                 datasets: [{ label: "Coverage", data: [${coverage}], backgroundColor: ["#22c55e"] }],
             },
             options: { scales: { y: { max: 100 } } },
-        })
+        })`
+            : ""}
     </script>
 </body>
 </html>`

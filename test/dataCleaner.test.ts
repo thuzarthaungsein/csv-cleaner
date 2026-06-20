@@ -5,7 +5,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { runPipeline } from "../src/agents/dataCleaner.js"
 import { buildCountryCache } from "../src/services/enricher.js"
+import type { CountryRecord } from "../src/services/enricher.js"
 import { getJob } from "../src/repositories/job.js"
+
+const FIXTURE_COUNTRIES: CountryRecord[] = [
+    { name: "United States", cca2: "US", cca3: "USA", region: "Americas" },
+    { name: "France", cca2: "FR", cca3: "FRA", region: "Europe" },
+]
 
 test("runPipeline runs full pipeline end to end and marks job done", async () => {
     const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
@@ -20,6 +26,26 @@ test("runPipeline runs full pipeline end to end and marks job done", async () =>
         const job = await getJob(result.jobId)
         assert.equal(job?.status, "done")
         assert.equal(job?.row_count_before, 3)
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
+test("runPipeline enriches rows with a populated country cache and persists the result", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "valid_with_country.csv")
+    await copyFile("test/fixtures/valid_with_country.csv", uploadPath)
+
+    try {
+        const cache = buildCountryCache(FIXTURE_COUNTRIES)
+        const result = await runPipeline(uploadPath, cache)
+
+        assert.equal(result.status, "done")
+        const job = await getJob(result.jobId)
+        assert.equal(job?.status, "done")
+        assert.ok(job?.enriched_columns)
+        assert.ok(job?.enriched_columns?.includes("region"))
+        assert.equal(job?.skipped_rows, 1)
     } finally {
         await rm(uploadDir, { recursive: true, force: true })
     }
