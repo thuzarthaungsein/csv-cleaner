@@ -22,3 +22,16 @@ test("cleanCsv trims, lowercases emails, dedupes, and nulls empty strings", asyn
         await rm(outputDir, { recursive: true, force: true })
     }
 })
+
+test("cleanCsv only lowercases columns that exactly match email/e_mail/email_address, not substrings", async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), "csv-cleaner-test-"))
+    try {
+        const result = await cleanCsv("test/fixtures/email-like-columns.csv", outputDir)
+        const contents = await readFile(result.outputPath, "utf-8")
+
+        assert.ok(contents.includes("alice@example.com"), "exact 'email' column should be lowercased")
+        assert.ok(contents.includes("BOB@EXAMPLE.COM"), "'emails_sent' column must NOT be lowercased (not an exact match)")
+    } finally {
+        await rm(outputDir, { recursive: true, force: true })
+    }
+})

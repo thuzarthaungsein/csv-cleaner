@@ -7,6 +7,8 @@ export interface CleanResult {
     rowCountAfter: number
 }
 
+const EMAIL_COLUMN_NAMES = ["email", "e_mail", "email_address"]
+
 function quoteIdent(identifier: string): string {
     return `"${identifier.replace(/"/g, '""')}"`
 }
@@ -33,7 +35,7 @@ export async function cleanCsv(filePath: string, outputDir: string): Promise<Cle
             const lower = column.toLowerCase()
             const isVarchar = columnTypes.get(column) === "VARCHAR"
             const quoted = quoteIdent(column)
-            if (lower.includes("email")) {
+            if (EMAIL_COLUMN_NAMES.includes(lower)) {
                 return isVarchar
                     ? `NULLIF(LOWER(TRIM(${quoted})), '') AS ${quoted}`
                     : quoted
@@ -48,18 +50,14 @@ export async function cleanCsv(filePath: string, outputDir: string): Promise<Cle
                 : quoted
         })
 
-        const dedupeKey = columnNames.includes("id") ? "id" : columnNames[0]
-        const quotedDedupeKey = quoteIdent(dedupeKey)
-
         const baseName = basename(filePath, extname(filePath))
         const outputPath = join(outputDir, `${baseName}_cleaned.csv`)
         const escapedOutput = outputPath.replace(/'/g, "''")
 
         await db.exec(`
             COPY (
-                SELECT DISTINCT ON (${quotedDedupeKey}) ${selectParts.join(", ")}
+                SELECT DISTINCT ${selectParts.join(", ")}
                 FROM read_csv_auto('${escapedInput}')
-                ORDER BY ${quotedDedupeKey}
             ) TO '${escapedOutput}' (HEADER, DELIMITER ',')
         `)
 
