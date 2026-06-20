@@ -76,14 +76,7 @@ Duplicate detection compares the full row — two rows are only flagged as dupli
 
 ### 2. Sample CSV with country enrichment
 
-Save this as `sample.csv` — note there's nothing special about its columns, but it includes a `country` column, which triggers enrichment:
-
-```csv
-id,name,email,country
-1,Alice,alice@example.com,United States
-2,Bob,bob@example.com,FR
-3,Carol,carol@example.com,Wakanda
-```
+Prepare CSV to test. eg. sample.csv — note there's nothing special about its columns, but if it includes a country column, which will trigger enrichment.
 
 The enricher detects the `country` column (it matches on header names `country`, `country_name`, `country_code`, `iso_code`, `iso2`, or `iso3` — case-insensitive) and looks each value up by name or ISO code (`cca2`/`cca3`) against the cached country dataset. `United States` and `FR` will match and get enriched with region/ISO data; `Wakanda` isn't a real country, so that row is counted as **skipped** — this is intentional in the sample, to show what a partial-match job looks like.
 
@@ -111,6 +104,12 @@ curl http://localhost:3000/report/1
 ```
 
 The summary table will show `enriched_columns: region,cca3` and `skipped_rows: 1` (the Wakanda row), and the coverage chart will reflect 2 enriched out of 3 rows.
+
+## Report Preview
+
+![CSV Cleaner Report](docs/report.png)
+
+> Sample report showing before/after row counts and country enrichment coverage.
 
 ### 4. Try a CSV with no country column
 
