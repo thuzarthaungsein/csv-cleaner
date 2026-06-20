@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { mkdir, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import { runPipeline } from "../agents/dataCleaner.js"
 import type { CountryRecord } from "../services/enricher.js"
 
@@ -18,14 +18,27 @@ export function buildUploadRoute(countryCache: Map<string, CountryRecord>) {
         }
 
         await mkdir(UPLOAD_DIR, { recursive: true })
-        const fileName = `${Date.now()}_${file.name}`
+        const safeName = basename(file.name)
+        const fileName = `${Date.now()}_${safeName}`
         const filePath = join(UPLOAD_DIR, fileName)
         const buffer = Buffer.from(await file.arrayBuffer())
         await writeFile(filePath, buffer)
 
-        const result = await runPipeline(filePath, countryCache)
+        try {
+            const result = await runPipeline(filePath, countryCache)
 
-        return c.json({ jobId: result.jobId, status: result.status, fileName })
+            if (result.status === "done") {
+                return c.json({ jobId: result.jobId, status: result.status, fileName })
+            }
+
+            return c.json(
+                { jobId: result.jobId, status: result.status, fileName, errorMessage: result.errorMessage },
+                500,
+            )
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            return c.json({ error: "pipeline failed to start", message }, 500)
+        }
     })
 
     return route
