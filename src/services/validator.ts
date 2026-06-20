@@ -60,8 +60,8 @@ export async function validateCsv(filePath: string): Promise<ValidationResult> {
 
         const quotedColumnList = columnNames.map(quoteIdent).join(", ")
         const [{ dupCount }] = await db.all(`
-            SELECT COUNT(*)::INT AS "dupCount" FROM (
-                SELECT ${quotedColumnList} FROM read_csv_auto('${escapedPath}')
+            SELECT SUM(group_count)::INT AS "dupCount" FROM (
+                SELECT COUNT(*) AS group_count FROM read_csv_auto('${escapedPath}')
                 GROUP BY ${quotedColumnList}
                 HAVING COUNT(*) > 1
             ) AS dups

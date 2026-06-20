@@ -16,7 +16,7 @@ test("validateCsv detects a fully-duplicate row and a date type mismatch", async
 
     const dupError = result.errors.find((e) => e.column === "*" && e.issue === "duplicate_row")
     assert.ok(dupError, "expected a duplicate_row error with column '*'")
-    assert.equal(dupError?.count, 1)
+    assert.equal(dupError?.count, 2)
 
     const dateWarning = result.warnings.find((w) => w.column === "signup_date" && w.issue === "type_mismatch")
     assert.ok(dateWarning, "expected a type_mismatch warning for signup_date column")
@@ -52,4 +52,14 @@ test("validateCsv reports numeric_mismatch warning when a VARCHAR column is most
     const warning = result.warnings.find((w) => w.column === "score" && w.issue === "numeric_mismatch")
     assert.ok(warning, "expected a numeric_mismatch warning for score column")
     assert.equal(warning?.count, 1)
+})
+
+test("validateCsv sums duplicate row counts across multiple duplicate groups", async () => {
+    const result = await validateCsv("test/fixtures/multi-duplicate.csv")
+    assert.equal(result.valid, false)
+
+    const dupError = result.errors.find((e) => e.column === "*" && e.issue === "duplicate_row")
+    assert.ok(dupError, "expected a duplicate_row error with column '*'")
+    // one group of 3 (Bob) + one group of 2 (Dave) = 5 duplicate rows total
+    assert.equal(dupError?.count, 5)
 })
