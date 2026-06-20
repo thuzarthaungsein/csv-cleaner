@@ -54,9 +54,9 @@ test("POST /upload returns 500 with errorMessage when the pipeline fails", async
     const app = new Hono()
     app.route("/upload", buildUploadRoute(buildCountryCache([])))
 
-    const csvContents = await readFile("test/fixtures/missing-column.csv")
+    const csvContents = await readFile("test/fixtures/empty-column.csv")
     const formData = new FormData()
-    formData.append("file", new Blob([csvContents], { type: "text/csv" }), "missing-column.csv")
+    formData.append("file", new Blob([csvContents], { type: "text/csv" }), "empty-column.csv")
 
     const res = await app.request("/upload", {
         method: "POST",

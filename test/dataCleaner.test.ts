@@ -61,8 +61,8 @@ test("runPipeline marks job failed when the input file does not exist", async ()
 
 test("runPipeline marks job failed when the CSV fails validation", async () => {
     const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
-    const uploadPath = join(uploadDir, "missing-column.csv")
-    await copyFile("test/fixtures/missing-column.csv", uploadPath)
+    const uploadPath = join(uploadDir, "empty-column.csv")
+    await copyFile("test/fixtures/empty-column.csv", uploadPath)
 
     try {
         const result = await runPipeline(uploadPath, buildCountryCache([]))
