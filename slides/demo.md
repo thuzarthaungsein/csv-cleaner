@@ -2,6 +2,7 @@
 marp: true
 paginate: true
 transition: fade
+# PechaKucha: 6 slides, 20s auto-advance. Do not change the count.
 auto-advance: 20
 ---
 
@@ -13,6 +14,8 @@ auto-advance: 20
 - Receives messy CSVs from clients or external sources
 - Spends hours manually cleaning before doing any real work
 
+<!-- 20s -->
+
 ---
 
 <!-- slide 2 -->
@@ -23,6 +26,8 @@ auto-advance: 20
 - No country/region context on location-based data
 - Manual cleaning is repetitive, error-prone, not reproducible
 
+<!-- 20s -->
+
 ---
 
 <!-- slide 3 -->
@@ -32,6 +37,8 @@ auto-advance: 20
 - CSV Cleaner ETL API — upload any CSV, get a clean + enriched version back
 - Validates → deduplicates → normalizes → enriches with country data
 - Visual HTML report showing before/after row counts + enrichment summary
+
+<!-- 20s -->
 
 ---
 
@@ -44,6 +51,10 @@ auto-advance: 20
 - **Agent:** csv-data-normalizer — dedupe + normalize → outputs cleaned CSV
 - **Agent:** code-reviewer — ETL architecture check before every commit
 
+<!-- 20s -->
+
+---
+
 <!-- slide 5 -->
 
 # Why it matters
@@ -51,6 +62,8 @@ auto-advance: 20
 - Works with any CSV structure — no hardcoded column requirements
 - Enrichment auto-skipped gracefully if no country column detected
 - Every job tracked with status, row counts, and full error trail
+
+<!-- 20s -->
 
 ---
 
