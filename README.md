@@ -51,10 +51,12 @@ Validation gates the pipeline: a CSV that fails validation is marked `failed` im
 
 Copy `.env.example` to `.env` and fill in your own values — see the Setup section above.
 
-| Variable       | Description                             |
-| -------------- | ---------------------------------------- |
-| `DATABASE_URL` | Postgres connection string used by `pg` |
-| `PORT`         | Port the Hono server listens on         |
+| Variable            | Description                             |
+| ------------------- | --------------------------------------- |
+| `DATABASE_URL`      | Postgres connection string used by `pg` |
+| `PORT`              | Port the Hono server listens on         |
+| `POSTGRES_USER`     | Postgres DB username                    |
+| `POSTGRES_PASSWORD` | Postgres DB user password               |
 
 ## Quick start: try it yourself
 
