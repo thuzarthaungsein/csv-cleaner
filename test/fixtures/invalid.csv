@@ -1,5 +1,6 @@
 id,name,email,signup_date
 1,Alice,alice@example.com,2024-01-15
-2,,bob@example.com,2024-02-20
+2,Bob,bob@example.com,2024-02-20
 2,Bob,bob@example.com,2024-02-20
 3,Carol,not-an-email,bad-date
+4,,dave@example.com,2024-04-10

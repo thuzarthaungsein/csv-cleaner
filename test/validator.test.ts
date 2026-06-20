@@ -9,28 +9,47 @@ test("validateCsv reports a clean file as valid with correct row count", async (
     assert.deepEqual(result.errors, [])
 })
 
-test("validateCsv detects nulls, duplicate ids, and type mismatch", async () => {
+test("validateCsv detects a fully-duplicate row and a date type mismatch", async () => {
     const result = await validateCsv("test/fixtures/invalid.csv")
     assert.equal(result.valid, false)
-    assert.equal(result.rowCount, 4)
+    assert.equal(result.rowCount, 5)
 
-    const nullError = result.errors.find((e) => e.column === "name" && e.issue === "null_value")
-    assert.ok(nullError, "expected a null_value error for name column")
-    assert.equal(nullError?.count, 1)
-
-    const dupError = result.errors.find((e) => e.column === "id" && e.issue === "duplicate_row")
-    assert.ok(dupError, "expected a duplicate_row error for id column")
+    const dupError = result.errors.find((e) => e.column === "*" && e.issue === "duplicate_row")
+    assert.ok(dupError, "expected a duplicate_row error with column '*'")
     assert.equal(dupError?.count, 1)
 
-    const typeWarning = result.warnings.find((w) => w.column === "signup_date" && w.issue === "type_mismatch")
-    assert.ok(typeWarning, "expected a type_mismatch warning for signup_date column")
+    const dateWarning = result.warnings.find((w) => w.column === "signup_date" && w.issue === "type_mismatch")
+    assert.ok(dateWarning, "expected a type_mismatch warning for signup_date column")
+
+    const emptyColumnError = result.errors.find((e) => e.issue === "empty_column")
+    assert.equal(emptyColumnError, undefined, "no column in invalid.csv is fully empty")
 })
 
-test("validateCsv reports an error when a required column is missing entirely", async () => {
-    const result = await validateCsv("test/fixtures/missing-column.csv")
+test("validateCsv reports an empty_column error for a fully-empty column", async () => {
+    const result = await validateCsv("test/fixtures/empty-column.csv")
     assert.equal(result.valid, false)
 
-    const missingError = result.errors.find((e) => e.column === "email" && e.issue === "missing_column")
-    assert.ok(missingError, "expected a missing_column error for email column")
-    assert.equal(missingError?.count, 0)
+    const emptyError = result.errors.find((e) => e.column === "notes" && e.issue === "empty_column")
+    assert.ok(emptyError, "expected an empty_column error for notes column")
+    assert.equal(emptyError?.count, 3)
+
+    const highNullWarning = result.warnings.find((w) => w.column === "notes" && w.issue === "high_null_ratio")
+    assert.equal(highNullWarning, undefined, "empty_column and high_null_ratio must be mutually exclusive")
+})
+
+test("validateCsv reports high_null_ratio warning when a column is more than half null but not fully empty", async () => {
+    const result = await validateCsv("test/fixtures/high-null.csv")
+    assert.equal(result.valid, true, "high_null_ratio is a warning, not an error")
+
+    const warning = result.warnings.find((w) => w.column === "notes" && w.issue === "high_null_ratio")
+    assert.ok(warning, "expected a high_null_ratio warning for notes column")
+    assert.equal(warning?.count, 3)
+})
+
+test("validateCsv reports numeric_mismatch warning when a VARCHAR column is mostly numeric-looking", async () => {
+    const result = await validateCsv("test/fixtures/numeric-mismatch.csv")
+
+    const warning = result.warnings.find((w) => w.column === "score" && w.issue === "numeric_mismatch")
+    assert.ok(warning, "expected a numeric_mismatch warning for score column")
+    assert.equal(warning?.count, 1)
 })

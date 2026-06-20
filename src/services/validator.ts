@@ -18,7 +18,9 @@ export interface ValidationResult {
     warnings: ValidationWarning[]
 }
 
-const REQUIRED_COLUMNS = ["id", "name", "email"]
+function quoteIdent(identifier: string): string {
+    return `"${identifier.replace(/"/g, '""')}"`
+}
 
 export async function validateCsv(filePath: string): Promise<ValidationResult> {
     const db = await Database.create(":memory:")
@@ -39,39 +41,58 @@ export async function validateCsv(filePath: string): Promise<ValidationResult> {
             `SELECT COUNT(*)::INT AS "rowCount" FROM read_csv_auto('${escapedPath}')`,
         )
 
-        for (const column of REQUIRED_COLUMNS) {
-            if (!columnNames.includes(column)) {
-                errors.push({ column, issue: "missing_column", count: 0 })
-                continue
-            }
+        for (const column of columnNames) {
+            const quoted = quoteIdent(column)
             const isVarchar = columnTypes.get(column) === "VARCHAR"
             const nullCondition = isVarchar
-                ? `"${column}" IS NULL OR "${column}" = ''`
-                : `"${column}" IS NULL`
+                ? `${quoted} IS NULL OR ${quoted} = ''`
+                : `${quoted} IS NULL`
             const [{ nullCount }] = await db.all(
                 `SELECT COUNT(*)::INT AS "nullCount" FROM read_csv_auto('${escapedPath}') WHERE ${nullCondition}`,
             )
-            if (nullCount > 0) {
-                errors.push({ column, issue: "null_value", count: nullCount })
+
+            if (nullCount === rowCount && rowCount > 0) {
+                errors.push({ column, issue: "empty_column", count: nullCount })
+            } else if (nullCount > rowCount / 2) {
+                warnings.push({ column, issue: "high_null_ratio", count: nullCount })
             }
         }
 
-        if (columnNames.includes("id")) {
-            const [{ dupCount }] = await db.all(`
-                SELECT COUNT(*)::INT AS "dupCount" FROM (
-                    SELECT "id" FROM read_csv_auto('${escapedPath}')
-                    GROUP BY "id"
-                    HAVING COUNT(*) > 1
-                ) AS dups
-            `)
-            if (dupCount > 0) {
-                errors.push({ column: "id", issue: "duplicate_row", count: dupCount })
-            }
+        const quotedColumnList = columnNames.map(quoteIdent).join(", ")
+        const [{ dupCount }] = await db.all(`
+            SELECT COUNT(*)::INT AS "dupCount" FROM (
+                SELECT ${quotedColumnList} FROM read_csv_auto('${escapedPath}')
+                GROUP BY ${quotedColumnList}
+                HAVING COUNT(*) > 1
+            ) AS dups
+        `)
+        if (dupCount > 0) {
+            errors.push({ column: "*", issue: "duplicate_row", count: dupCount })
         }
 
         for (const [column, type] of columnTypes) {
-            if (column.toLowerCase().includes("date") && type === "VARCHAR") {
+            if (type !== "VARCHAR") {
+                continue
+            }
+            const quoted = quoteIdent(column)
+
+            if (column.toLowerCase().includes("date")) {
                 warnings.push({ column, issue: "type_mismatch" })
+            }
+
+            const [{ nonNullCount }] = await db.all(
+                `SELECT COUNT(*)::INT AS "nonNullCount" FROM read_csv_auto('${escapedPath}') WHERE ${quoted} IS NOT NULL AND ${quoted} != ''`,
+            )
+            if (nonNullCount === 0) {
+                continue
+            }
+            const [{ numericCount }] = await db.all(`
+                SELECT COUNT(*)::INT AS "numericCount" FROM read_csv_auto('${escapedPath}')
+                WHERE regexp_matches(${quoted}, '^-?\\d+(\\.\\d+)?$')
+            `)
+            const numericRatio = numericCount / nonNullCount
+            if (numericRatio >= 0.9 && numericCount < nonNullCount) {
+                warnings.push({ column, issue: "numeric_mismatch", count: nonNullCount - numericCount })
             }
         }
 
