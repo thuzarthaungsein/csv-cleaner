@@ -11,6 +11,7 @@ export interface Job {
     enriched_api: string | null
     enriched_columns: string | null
     skipped_rows: number | null
+    output_path: string | null
     error_message: string | null
     created_at: Date
     updated_at: Date
@@ -41,6 +42,7 @@ export async function completeJob(
         enrichedApi: string | null
         enrichedColumns: string[]
         skippedRows: number
+        outputPath: string
     },
 ): Promise<void> {
     await pool.query(
@@ -51,14 +53,16 @@ export async function completeJob(
             enriched_api = $3,
             enriched_columns = $4,
             skipped_rows = $5,
+            output_path = $6,
             updated_at = NOW()
-        WHERE id = $6`,
+        WHERE id = $7`,
         [
             fields.rowCountBefore,
             fields.rowCountAfter,
             fields.enrichedApi,
             fields.enrichedColumns.length > 0 ? fields.enrichedColumns.join(",") : null,
             fields.skippedRows,
+            fields.outputPath,
             id,
         ],
     )

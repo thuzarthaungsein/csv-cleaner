@@ -19,7 +19,7 @@ test("updateJobStatus advances status", async () => {
     assert.equal(fetched?.status, "validated")
 })
 
-test("completeJob sets final fields and status done", async () => {
+test("completeJob sets final fields, output_path, and status done", async () => {
     const job = await createJob("sample3.csv")
     await completeJob(job.id, {
         rowCountBefore: 10,
@@ -27,6 +27,7 @@ test("completeJob sets final fields and status done", async () => {
         enrichedApi: "restcountries.com/v3.1",
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
+        outputPath: "outputs/sample3_enriched.csv",
     })
     const fetched = await getJob(job.id)
     assert.equal(fetched?.status, "done")
@@ -34,6 +35,7 @@ test("completeJob sets final fields and status done", async () => {
     assert.equal(fetched?.row_count_after, 8)
     assert.equal(fetched?.enriched_columns, "region,cca3")
     assert.equal(fetched?.skipped_rows, 1)
+    assert.equal(fetched?.output_path, "outputs/sample3_enriched.csv")
 })
 
 test("failJob sets status failed and error_message", async () => {

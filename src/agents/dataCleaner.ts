@@ -41,12 +41,17 @@ export async function runPipeline(
             await updateJobStatus(job.id, "enriched")
         }
 
+        const finalOutputPath = enrichResult.enriched
+            ? enrichResult.outputPath
+            : cleanResult.outputPath
+
         await completeJob(job.id, {
             rowCountBefore: validation.rowCount,
             rowCountAfter: cleanResult.rowCountAfter,
             enrichedApi: enrichResult.enriched ? "mledoze/countries" : null,
             enrichedColumns: enrichResult.enrichedColumns,
             skippedRows: enrichResult.skippedRows,
+            outputPath: finalOutputPath,
         })
 
         return { jobId: job.id, status: "done" }

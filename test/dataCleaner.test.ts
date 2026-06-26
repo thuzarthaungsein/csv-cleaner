@@ -51,6 +51,41 @@ test("runPipeline enriches rows with a populated country cache and persists the 
     }
 })
 
+test("runPipeline persists the cleaned output path when enrichment did not run", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "valid.csv")
+    await copyFile("test/fixtures/valid.csv", uploadPath)
+
+    try {
+        const result = await runPipeline(uploadPath, buildCountryCache([]))
+
+        assert.equal(result.status, "done")
+        const job = await getJob(result.jobId)
+        assert.ok(job?.output_path)
+        assert.ok(job?.output_path?.endsWith("_cleaned.csv"))
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
+test("runPipeline persists the enriched output path when enrichment ran", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "valid_with_country.csv")
+    await copyFile("test/fixtures/valid_with_country.csv", uploadPath)
+
+    try {
+        const cache = buildCountryCache(FIXTURE_COUNTRIES)
+        const result = await runPipeline(uploadPath, cache)
+
+        assert.equal(result.status, "done")
+        const job = await getJob(result.jobId)
+        assert.ok(job?.output_path)
+        assert.ok(job?.output_path?.endsWith("_enriched.csv"))
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
 test("runPipeline marks job failed when the input file does not exist", async () => {
     const result = await runPipeline("uploads/does-not-exist.csv", buildCountryCache([]))
     assert.equal(result.status, "failed")

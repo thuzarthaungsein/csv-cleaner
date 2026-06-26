@@ -16,3 +16,4 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS enriched_columns TEXT;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS skipped_rows INT DEFAULT 0;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS output_path TEXT;
