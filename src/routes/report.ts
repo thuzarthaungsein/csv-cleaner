@@ -3,7 +3,7 @@ import type { Job } from "../repositories/job.js";
 import { getJob } from "../repositories/job.js";
 import { createReadStream, existsSync } from "node:fs";
 import { Readable } from "node:stream";
-import { basename, extname } from "node:path";
+import { basename } from "node:path";
 
 function escapeHtml(value: string): string {
   return value
@@ -15,9 +15,7 @@ function escapeHtml(value: string): string {
 }
 
 function buildDownloadFileName(job: Job): string {
-  const base = basename(job.file_name, extname(job.file_name));
-  const suffix = job.enriched_columns !== null ? "enriched" : "cleaned";
-  return `${base}_${suffix}.csv`;
+  return basename(job.output_path!);
 }
 
 function renderInProgress(job: Job): string {

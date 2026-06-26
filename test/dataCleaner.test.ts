@@ -3,7 +3,9 @@ import assert from "node:assert/strict"
 import { copyFile, mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { Hono } from "hono"
 import { runPipeline } from "../src/agents/dataCleaner.js"
+import { buildReportRoute } from "../src/routes/report.js"
 import { buildCountryCache } from "../src/services/enricher.js"
 import type { CountryRecord } from "../src/services/enricher.js"
 import { getJob } from "../src/repositories/job.js"
@@ -81,6 +83,33 @@ test("runPipeline persists the enriched output path when enrichment ran", async 
         const job = await getJob(result.jobId)
         assert.ok(job?.output_path)
         assert.ok(job?.output_path?.endsWith("_enriched.csv"))
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
+test("runPipeline output is streamable through the download route", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "valid.csv")
+    await copyFile("test/fixtures/valid.csv", uploadPath)
+
+    try {
+        const result = await runPipeline(uploadPath, buildCountryCache([]))
+        assert.equal(result.status, "done")
+
+        const job = await getJob(result.jobId)
+        assert.ok(job?.output_path)
+
+        const app = new Hono()
+        app.route("/report", buildReportRoute())
+
+        const res = await app.request(`/report/${result.jobId}/download`)
+        assert.equal(res.status, 200)
+        assert.equal(res.headers.get("content-type"), "text/csv")
+
+        const body = await res.text()
+        assert.ok(body.length > 0)
+        assert.ok(body.includes("alice@example.com"))
     } finally {
         await rm(uploadDir, { recursive: true, force: true })
     }

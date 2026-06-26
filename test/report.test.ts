@@ -50,6 +50,7 @@ test("GET /report/:id renders charts and summary table for a done job", async ()
         enrichedApi: "restcountries.com/v3.1",
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
+        outputPath: "outputs/done_job_cleaned_enriched.csv",
     })
 
     const res = await app.request(`/report/${job.id}`)
@@ -92,6 +93,7 @@ test("GET /report/:id shows not-enriched message instead of a misleading coverag
         enrichedApi: null,
         enrichedColumns: [],
         skippedRows: 0,
+        outputPath: "outputs/no_country_job_cleaned.csv",
     })
 
     const res = await app.request(`/report/${job.id}`)
