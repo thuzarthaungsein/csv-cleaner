@@ -60,6 +60,27 @@ test("GET /report/:id renders charts and summary table for a done job", async ()
     assert.ok(html.includes("tailwindcss"))
 })
 
+test("GET /report/:id includes a download link for a done job", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("downloadable_job.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 10,
+        rowCountAfter: 8,
+        enrichedApi: "mledoze/countries",
+        enrichedColumns: ["region", "cca3"],
+        skippedRows: 1,
+        outputPath: "outputs/downloadable_job_enriched.csv",
+    })
+
+    const res = await app.request(`/report/${job.id}`)
+    const html = await res.text()
+    assert.equal(res.status, 200)
+    assert.ok(html.includes(`/report/${job.id}/download`))
+    assert.ok(html.includes("Download CSV"))
+})
+
 test("GET /report/:id shows not-enriched message instead of a misleading coverage chart", async () => {
     const app = new Hono()
     app.route("/report", buildReportRoute())

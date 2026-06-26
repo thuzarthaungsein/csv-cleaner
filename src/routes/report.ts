@@ -73,7 +73,10 @@ function renderDone(job: Job): string {
     <div class="max-w-5xl mx-auto space-y-6">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Report: <span class="font-mono text-gray-600">${fileName}</span></h1>
-            <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span>
+            <div class="flex items-center gap-3">
+                <a href="/report/${job.id}/download" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 transition-colors">Download CSV</a>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span>
+            </div>
         </div>
 
         <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
