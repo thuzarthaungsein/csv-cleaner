@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import type { Job } from "../repositories/job.js";
 import { getJob } from "../repositories/job.js";
+import { createReadStream, existsSync } from "node:fs";
+import { Readable } from "node:stream";
+import { basename, extname } from "node:path";
 
 function escapeHtml(value: string): string {
   return value
@@ -9,6 +12,12 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function buildDownloadFileName(job: Job): string {
+  const base = basename(job.file_name, extname(job.file_name));
+  const suffix = job.enriched_columns !== null ? "enriched" : "cleaned";
+  return `${base}_${suffix}.csv`;
 }
 
 function renderInProgress(job: Job): string {
@@ -145,6 +154,30 @@ export function buildReportRoute() {
       job.status === "done" ? renderDone(job) : renderInProgress(job);
 
     return c.html(html);
+  });
+
+  route.get("/:id/download", async (c) => {
+    const id = Number(c.req.param("id"));
+    const job = await getJob(id);
+
+    if (!job) {
+      return c.json({ error: "job not found" }, 404);
+    }
+
+    if (job.status !== "done" || !job.output_path) {
+      return c.json({ error: "job not finished" }, 400);
+    }
+
+    if (!existsSync(job.output_path)) {
+      return c.json({ error: "output file not found" }, 404);
+    }
+
+    const fileName = buildDownloadFileName(job);
+    c.header("Content-Type", "text/csv");
+    c.header("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    const nodeStream = createReadStream(job.output_path);
+    return c.body(Readable.toWeb(nodeStream) as ReadableStream);
   });
 
   return route;
