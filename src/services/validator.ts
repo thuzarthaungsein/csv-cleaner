@@ -9,6 +9,7 @@ export interface ValidationError {
 export interface ValidationWarning {
     column: string
     issue: string
+    count?: number
 }
 
 export interface ValidationResult {
