@@ -168,3 +168,76 @@ test("GET /report/:id/download returns 404 when the output file is missing from 
     const res = await app.request(`/report/${job.id}/download`)
     assert.equal(res.status, 404)
 })
+
+test("GET /report/:id/fragment returns 404 for missing job", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const res = await app.request("/report/999999/fragment")
+    assert.equal(res.status, 404)
+})
+
+test("GET /report/:id/fragment returns 400 for a job that is not done", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("pending_fragment.csv")
+
+    const res = await app.request(`/report/${job.id}/fragment`)
+    assert.equal(res.status, 400)
+})
+
+test("GET /report/:id/fragment returns html and chartData for a done job", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("fragment_job.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 10,
+        rowCountAfter: 8,
+        enrichedApi: "mledoze/countries",
+        enrichedColumns: ["region", "cca3"],
+        skippedRows: 1,
+        outputPath: "outputs/fragment_job_cleaned_enriched.csv",
+    })
+
+    const res = await app.request(`/report/${job.id}/fragment`)
+    assert.equal(res.status, 200)
+    const body = await res.json()
+    assert.ok(body.html.includes("fragment_job.csv"))
+    assert.ok(body.html.includes("Download CSV"))
+    assert.ok(body.html.includes("coverageChart"))
+    assert.deepEqual(body.chartData, {
+        rowBefore: 10,
+        rowAfter: 8,
+        wasEnriched: true,
+        coverage: 88,
+    })
+})
+
+test("GET /report/:id/fragment reflects not-enriched jobs in chartData", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("fragment_not_enriched.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 10,
+        rowCountAfter: 8,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+        outputPath: "outputs/fragment_not_enriched_cleaned.csv",
+    })
+
+    const res = await app.request(`/report/${job.id}/fragment`)
+    assert.equal(res.status, 200)
+    const body = await res.json()
+    assert.ok(!body.html.includes("coverageChart"))
+    assert.ok(body.html.includes("Not enriched (no country column detected)"))
+    assert.deepEqual(body.chartData, {
+        rowBefore: 10,
+        rowAfter: 8,
+        wasEnriched: false,
+        coverage: 0,
+    })
+})

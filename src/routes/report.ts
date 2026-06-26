@@ -40,7 +40,14 @@ function renderInProgress(job: Job): string {
 </html>`;
 }
 
-function renderDone(job: Job): string {
+interface ReportChartData {
+  rowBefore: number;
+  rowAfter: number;
+  wasEnriched: boolean;
+  coverage: number;
+}
+
+function renderReportFragment(job: Job): { html: string; chartData: ReportChartData } {
   const fileName = escapeHtml(job.file_name);
   const status = escapeHtml(job.status);
   const rowBefore = job.row_count_before ?? 0;
@@ -59,16 +66,7 @@ function renderDone(job: Job): string {
         ? "bg-red-100 text-red-700"
         : "bg-amber-100 text-amber-700";
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Report - Job ${job.id}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-gray-50 p-8">
-    <div class="max-w-5xl mx-auto space-y-6">
+  const html = `
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Report: <span class="font-mono text-gray-600">${fileName}</span></h1>
             <div class="flex items-center gap-3">
@@ -112,10 +110,14 @@ function renderDone(job: Job): string {
                 : `<div class="flex items-center justify-center h-48 text-gray-400 italic text-sm">Not enriched (no country column detected)</div>`
             }
         </div>
-        </div>
-    </div>
+        </div>`;
 
-    <script>
+  return { html, chartData: { rowBefore, rowAfter, wasEnriched, coverage } };
+}
+
+function buildChartScript(chartData: ReportChartData): string {
+  const { rowBefore, rowAfter, wasEnriched, coverage } = chartData;
+  return `
         new Chart(document.getElementById("rowCountChart"), {
             type: "bar",
             data: {
@@ -134,7 +136,25 @@ function renderDone(job: Job): string {
             options: { scales: { y: { max: 100 } } },
         })`
             : ""
-        }
+        }`;
+}
+
+function renderDone(job: Job): string {
+  const { html, chartData } = renderReportFragment(job);
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Report - Job ${job.id}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-5xl mx-auto space-y-6">${html}
+    </div>
+
+    <script>${buildChartScript(chartData)}
     </script>
 </body>
 </html>`;
@@ -155,6 +175,22 @@ export function buildReportRoute() {
       job.status === "done" ? renderDone(job) : renderInProgress(job);
 
     return c.html(html);
+  });
+
+  route.get("/:id/fragment", async (c) => {
+    const id = Number(c.req.param("id"));
+    const job = await getJob(id);
+
+    if (!job) {
+      return c.json({ error: "job not found" }, 404);
+    }
+
+    if (job.status !== "done") {
+      return c.json({ error: "job not finished" }, 400);
+    }
+
+    const { html, chartData } = renderReportFragment(job);
+    return c.json({ html, chartData });
   });
 
   route.get("/:id/download", async (c) => {
