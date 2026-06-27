@@ -1,9 +1,9 @@
 import { Hono } from "hono";
+import { createReadStream, existsSync } from "node:fs";
+import { basename } from "node:path";
+import { Readable } from "node:stream";
 import type { Job } from "../repositories/job.js";
 import { getJob } from "../repositories/job.js";
-import { createReadStream, existsSync } from "node:fs";
-import { Readable } from "node:stream";
-import { basename } from "node:path";
 
 function escapeHtml(value: string): string {
   return value
@@ -47,7 +47,10 @@ interface ReportChartData {
   coverage: number;
 }
 
-function renderReportFragment(job: Job): { html: string; chartData: ReportChartData } {
+function renderReportFragment(job: Job): {
+  html: string;
+  chartData: ReportChartData;
+} {
   const fileName = escapeHtml(job.file_name);
   const status = escapeHtml(job.status);
   const rowBefore = job.row_count_before ?? 0;
@@ -67,13 +70,7 @@ function renderReportFragment(job: Job): { html: string; chartData: ReportChartD
         : "bg-amber-100 text-amber-700";
 
   const html = `
-        <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900">Report: <span class="font-mono text-gray-600">${fileName}</span></h1>
-            <div class="flex items-center gap-3">
-                <a href="/report/${job.id}/download" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 transition-colors">Download CSV</a>
-                <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span>
-            </div>
-        </div>
+        
 
         <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
             <div class="px-5 py-3 border-b border-gray-100 bg-gray-50">
@@ -81,12 +78,12 @@ function renderReportFragment(job: Job): { html: string; chartData: ReportChartD
             </div>
             <table class="w-full text-left">
                 <tbody class="divide-y divide-gray-100">
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 w-1/3">Status</th><td class="p-3 px-5 text-gray-900"><span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span></td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 w-1/3">Filename</th><td class="p-3 px-5 text-gray-900 font-mono text-sm">${fileName}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 w-1/3">Row count before</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowBefore}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 w-1/3">Row count after</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowAfter}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 w-1/3">Enriched columns</th><td class="p-3 px-5 text-gray-900">${enrichedColumns}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 w-1/3">Skipped rows</th><td class="p-3 px-5 text-red-600 font-semibold">${skipped}</td></tr>
+                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Status</th><td class="p-3 px-5 text-gray-900"><span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span></td></tr>
+                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Filename</th><td class="p-3 px-5 text-gray-900 font-mono text-sm break-all">${fileName}</td></tr>
+                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Row count before</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowBefore}</td></tr>
+                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Row count after</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowAfter}</td></tr>
+                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Enriched columns</th><td class="p-3 px-5 text-gray-900">${enrichedColumns}</td></tr>
+                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Skipped rows</th><td class="p-3 px-5 text-red-600 font-semibold">${skipped}</td></tr>
                 </tbody>
             </table>
         </div>
@@ -110,7 +107,10 @@ function renderReportFragment(job: Job): { html: string; chartData: ReportChartD
                 : `<div class="flex items-center justify-center h-48 text-gray-400 italic text-sm">Not enriched (no country column detected)</div>`
             }
         </div>
-        </div>`;
+        </div>
+        
+        <a href="/report/${job.id}/download" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 transition-colors">Download Cleaned CSV</a>
+        `;
 
   return { html, chartData: { rowBefore, rowAfter, wasEnriched, coverage } };
 }

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os"
 
 export interface CountryRecord {
     name: string
+    officialName?: string
     cca2: string
     cca3: string
     region: string
@@ -25,6 +26,9 @@ export function buildCountryCache(countries: CountryRecord[]): Map<string, Count
     const cache = new Map<string, CountryRecord>()
     for (const country of countries) {
         cache.set(country.name.toLowerCase(), country)
+        if (country.officialName) {
+            cache.set(country.officialName.toLowerCase(), country)
+        }
         cache.set(country.cca2.toLowerCase(), country)
         cache.set(country.cca3.toLowerCase(), country)
     }
@@ -39,13 +43,14 @@ export async function fetchCountryCache(): Promise<Map<string, CountryRecord>> {
             return new Map()
         }
         const data = (await response.json()) as Array<{
-            name: { common: string }
+            name: { common: string; official: string }
             cca2: string
             cca3: string
             region: string
         }>
         const countries: CountryRecord[] = data.map((entry) => ({
             name: entry.name.common,
+            officialName: entry.name.official,
             cca2: entry.cca2,
             cca3: entry.cca3,
             region: entry.region,
