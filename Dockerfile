@@ -1,17 +1,20 @@
-FROM node:24-alpine
+# Stage 1: build
+FROM node:24-slim AS builder
 
 WORKDIR /app
-
-# Install dependencies first (layer caching)
 COPY package*.json ./
-RUN npm ci --only=production
-
-# Copy source and build
+RUN npm ci
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
 
-# Create upload/output directories
+# Stage 2: production
+FROM node:24-slim
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY --from=builder /app/dist ./dist
 RUN mkdir -p uploads outputs
 
 EXPOSE 3000
