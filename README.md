@@ -9,8 +9,7 @@ POST /upload
     │
     ▼
 validator.ts ── schema checks: nulls, type mismatches, duplicate rows, row count
-    │
-    │  invalid? ──► fail fast, job marked "failed", clean/enrich are skipped
+    │             findings (errors + warnings) are recorded, never block the pipeline
     ▼
 cleaner.ts ── DuckDB SQL: trim, normalize dates to ISO 8601, lowercase emails, dedupe, empty string → NULL
     │
@@ -18,13 +17,17 @@ cleaner.ts ── DuckDB SQL: trim, normalize dates to ISO 8601, lowercase email
 enricher.ts ── optional join against country reference data if a country column is detected
     │
     ▼
-job.ts ── job metadata, status, and row counts saved to Postgres
+job.ts ── job metadata, status, row counts, and validation findings saved to Postgres
     │
     ▼
-GET /report/:id ── HTML report with summary table and Chart.js bar charts
+GET /report/:id ── HTML report with summary table, validation findings, and Chart.js bar charts
 ```
 
-Validation gates the pipeline: a CSV that fails validation is marked `failed` immediately and never reaches the clean or enrich stages.
+Validation is informational, not a gate: clean and enrich always run, regardless of what
+`validator.ts` finds. Any findings (e.g. duplicate rows, an empty column) are persisted on
+the job and shown as rows in the report's summary table — errors in red, warnings in amber.
+`status: "failed"` is reserved for genuine pipeline errors (a file that can't be read, a
+database error, etc.), never for a validation finding.
 
 ## Setup
 
@@ -92,16 +95,21 @@ Success response (HTTP 200):
 { "jobId": 1, "status": "done", "fileName": "1718999999999_your.csv" }
 ```
 
-If validation or any later pipeline stage fails, the endpoint returns **HTTP 500** with an `errorMessage` field instead:
+If the pipeline hits a genuine error (a file that can't be read, a database error, etc.),
+the endpoint returns **HTTP 500** with an `errorMessage` field instead:
 
 ```json
 {
   "jobId": 2,
   "status": "failed",
   "fileName": "1718999999999_bad.csv",
-  "errorMessage": "validation failed: [...]"
+  "errorMessage": "ENOENT: no such file or directory, open 'uploads/...'"
 }
 ```
+
+A CSV with validation findings (e.g. duplicate rows, an empty column) still completes
+successfully — `status: "done"` — with the findings visible in the report at
+`GET /report/:id` rather than blocking the upload.
 
 ### View the report
 
