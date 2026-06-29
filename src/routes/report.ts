@@ -18,6 +18,54 @@ function buildDownloadFileName(job: Job): string {
   return basename(job.output_path!);
 }
 
+interface ValidationFinding {
+  column: string;
+  issue: string;
+  count?: number;
+}
+
+interface ValidationFindings {
+  errors: ValidationFinding[];
+  warnings: ValidationFinding[];
+}
+
+const ISSUE_LABELS: Record<string, string> = {
+  empty_column: "Empty column",
+  duplicate_row: "Duplicate rows found",
+  high_null_ratio: "High null ratio",
+  numeric_mismatch: "Mostly numeric, has non-numeric values",
+  type_mismatch: "Looks like a date but isn't",
+};
+
+function describeFinding(finding: ValidationFinding): string {
+  const label = ISSUE_LABELS[finding.issue] ?? finding.issue;
+  const columnPart = finding.column === "*" ? "" : ` — ${escapeHtml(finding.column)}`;
+  const countPart = finding.count !== undefined ? ` (${finding.count})` : "";
+  return `${label}${columnPart}${countPart}`;
+}
+
+function renderFindingsRows(job: Job): string {
+  if (!job.validation_findings) {
+    return "";
+  }
+
+  const findings: ValidationFindings = JSON.parse(job.validation_findings);
+  const errorRows = findings.errors
+    .map(
+      (finding) =>
+        `<tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Validation</th><td class="p-3 px-5 text-red-600 font-medium">${describeFinding(finding)}</td></tr>`,
+    )
+    .join("");
+  const warningRows = findings.warnings
+    .map(
+      (finding) =>
+        `<tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Validation</th><td class="p-3 px-5 text-amber-600 font-medium">${describeFinding(finding)}</td></tr>`,
+    )
+    .join("");
+
+  return errorRows + warningRows;
+}
+
 function renderInProgress(job: Job): string {
   const fileName = escapeHtml(job.file_name);
   const status = escapeHtml(job.status);
@@ -84,6 +132,7 @@ function renderReportFragment(job: Job): {
                     <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Row count after</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowAfter}</td></tr>
                     <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Enriched columns</th><td class="p-3 px-5 text-gray-900">${enrichedColumns}</td></tr>
                     <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Skipped rows</th><td class="p-3 px-5 text-red-600 font-semibold">${skipped}</td></tr>
+                    ${renderFindingsRows(job)}
                 </tbody>
             </table>
         </div>

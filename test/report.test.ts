@@ -248,3 +248,78 @@ test("GET /report/:id/fragment reflects not-enriched jobs in chartData", async (
         coverage: 0,
     })
 })
+
+test("GET /report/:id shows validation error and warning rows when findings are present", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("findings_job.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 5,
+        rowCountAfter: 4,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+        outputPath: "outputs/findings_job_cleaned.csv",
+        validationFindings: {
+            errors: [{ column: "*", issue: "duplicate_row", count: 2 }],
+            warnings: [{ column: "signup_date", issue: "type_mismatch" }],
+        },
+    })
+
+    const res = await app.request(`/report/${job.id}`)
+    const html = await res.text()
+    assert.equal(res.status, 200)
+    assert.ok(html.includes("Duplicate rows found"))
+    assert.ok(html.includes("text-red-600"))
+    assert.ok(html.includes("signup_date"))
+    assert.ok(html.includes("text-amber-600"))
+})
+
+test("GET /report/:id shows no findings rows when validation_findings is null", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("clean_job.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 3,
+        rowCountAfter: 3,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+        outputPath: "outputs/clean_job_cleaned.csv",
+        validationFindings: { errors: [], warnings: [] },
+    })
+
+    const res = await app.request(`/report/${job.id}`)
+    const html = await res.text()
+    assert.equal(res.status, 200)
+    assert.ok(!html.includes("Duplicate rows found"))
+    assert.ok(!html.includes("Empty column"));
+    assert.ok(!html.includes("type_mismatch"));
+})
+
+test("GET /report/:id shows an empty_column finding with the column name", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("empty_col_job.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 3,
+        rowCountAfter: 3,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+        outputPath: "outputs/empty_col_job_cleaned.csv",
+        validationFindings: {
+            errors: [{ column: "notes", issue: "empty_column", count: 3 }],
+            warnings: [],
+        },
+    })
+
+    const res = await app.request(`/report/${job.id}`)
+    const html = await res.text()
+    assert.equal(res.status, 200)
+    assert.ok(html.includes("Empty column"))
+    assert.ok(html.includes("notes"))
+})
