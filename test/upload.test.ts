@@ -49,24 +49,3 @@ test("POST /upload sanitizes a path-traversal filename and stays within uploads/
 
     await rm(`uploads/${body.fileName}`, { force: true }).catch(() => {})
 })
-
-test("POST /upload returns 500 with errorMessage when the pipeline fails", async () => {
-    const app = new Hono()
-    app.route("/upload", buildUploadRoute(buildCountryCache([])))
-
-    const csvContents = await readFile("test/fixtures/empty-column.csv")
-    const formData = new FormData()
-    formData.append("file", new Blob([csvContents], { type: "text/csv" }), "empty-column.csv")
-
-    const res = await app.request("/upload", {
-        method: "POST",
-        body: formData,
-    })
-    const body = await res.json()
-
-    assert.equal(res.status, 500)
-    assert.equal(body.status, "failed")
-    assert.ok(body.errorMessage)
-
-    await rm(`uploads/${body.fileName}`, { force: true }).catch(() => {})
-})

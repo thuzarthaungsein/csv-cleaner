@@ -123,7 +123,7 @@ test("runPipeline marks job failed when the input file does not exist", async ()
     assert.ok(job?.error_message)
 })
 
-test("runPipeline marks job failed when the CSV fails validation", async () => {
+test("runPipeline still completes successfully when the CSV has an empty column, recording the finding", async () => {
     const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
     const uploadPath = join(uploadDir, "empty-column.csv")
     await copyFile("test/fixtures/empty-column.csv", uploadPath)
@@ -131,11 +131,50 @@ test("runPipeline marks job failed when the CSV fails validation", async () => {
     try {
         const result = await runPipeline(uploadPath, buildCountryCache([]))
 
-        assert.equal(result.status, "failed")
-        assert.ok(result.errorMessage?.includes("validation failed"))
+        assert.equal(result.status, "done")
         const job = await getJob(result.jobId)
-        assert.equal(job?.status, "failed")
-        assert.ok(job?.error_message)
+        assert.equal(job?.status, "done")
+        assert.ok(job?.validation_findings)
+        const findings = JSON.parse(job!.validation_findings!)
+        assert.deepEqual(findings.errors, [{ column: "notes", issue: "empty_column", count: 3 }])
+        assert.deepEqual(findings.warnings, [])
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
+test("runPipeline still completes successfully and dedupes when the CSV has duplicate rows", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "dirty.csv")
+    await copyFile("test/fixtures/dirty.csv", uploadPath)
+
+    try {
+        const result = await runPipeline(uploadPath, buildCountryCache([]))
+
+        assert.equal(result.status, "done")
+        const job = await getJob(result.jobId)
+        assert.equal(job?.status, "done")
+        assert.equal(job?.row_count_before, 5)
+        assert.equal(job?.row_count_after, 4)
+        assert.ok(job?.validation_findings)
+        const findings = JSON.parse(job!.validation_findings!)
+        assert.deepEqual(findings.errors, [{ column: "*", issue: "duplicate_row", count: 2 }])
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
+test("runPipeline stores null validation_findings for a clean CSV with no issues", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "valid.csv")
+    await copyFile("test/fixtures/valid.csv", uploadPath)
+
+    try {
+        const result = await runPipeline(uploadPath, buildCountryCache([]))
+
+        assert.equal(result.status, "done")
+        const job = await getJob(result.jobId)
+        assert.equal(job?.validation_findings, null)
     } finally {
         await rm(uploadDir, { recursive: true, force: true })
     }

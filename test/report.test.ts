@@ -51,6 +51,7 @@ test("GET /report/:id renders charts and summary table for a done job", async ()
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
         outputPath: "outputs/done_job_cleaned_enriched.csv",
+        validationFindings: { errors: [], warnings: [] },
     })
 
     const res = await app.request(`/report/${job.id}`)
@@ -73,6 +74,7 @@ test("GET /report/:id includes a download link for a done job", async () => {
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
         outputPath: "outputs/downloadable_job_enriched.csv",
+        validationFindings: { errors: [], warnings: [] },
     })
 
     const res = await app.request(`/report/${job.id}`)
@@ -94,6 +96,7 @@ test("GET /report/:id shows not-enriched message instead of a misleading coverag
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/no_country_job_cleaned.csv",
+        validationFindings: { errors: [], warnings: [] },
     })
 
     const res = await app.request(`/report/${job.id}`)
@@ -137,6 +140,7 @@ test("GET /report/:id/download streams the output file with correct headers", as
         enrichedColumns: ["region", "cca3"],
         skippedRows: 0,
         outputPath,
+        validationFindings: { errors: [], warnings: [] },
     })
 
     try {
@@ -163,6 +167,7 @@ test("GET /report/:id/download returns 404 when the output file is missing from 
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/this_file_does_not_exist_cleaned.csv",
+        validationFindings: { errors: [], warnings: [] },
     })
 
     const res = await app.request(`/report/${job.id}/download`)
@@ -199,6 +204,7 @@ test("GET /report/:id/fragment returns html and chartData for a done job", async
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
         outputPath: "outputs/fragment_job_cleaned_enriched.csv",
+        validationFindings: { errors: [], warnings: [] },
     })
 
     const res = await app.request(`/report/${job.id}/fragment`)
@@ -227,6 +233,7 @@ test("GET /report/:id/fragment reflects not-enriched jobs in chartData", async (
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/fragment_not_enriched_cleaned.csv",
+        validationFindings: { errors: [], warnings: [] },
     })
 
     const res = await app.request(`/report/${job.id}/fragment`)

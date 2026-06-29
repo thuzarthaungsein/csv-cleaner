@@ -26,12 +26,6 @@ export async function runPipeline(
         const validation = await validateCsv(filePath)
         await updateJobStatus(job.id, "validated")
 
-        if (!validation.valid) {
-            const message = `validation failed: ${JSON.stringify(validation.errors)}`
-            await failJob(job.id, message)
-            return { jobId: job.id, status: "failed", errorMessage: message }
-        }
-
         await mkdir(OUTPUT_DIR, { recursive: true })
         const cleanResult = await cleanCsv(filePath, OUTPUT_DIR)
         await updateJobStatus(job.id, "cleaned")
@@ -52,6 +46,7 @@ export async function runPipeline(
             enrichedColumns: enrichResult.enrichedColumns,
             skippedRows: enrichResult.skippedRows,
             outputPath: finalOutputPath,
+            validationFindings: { errors: validation.errors, warnings: validation.warnings },
         })
 
         return { jobId: job.id, status: "done" }

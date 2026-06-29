@@ -12,6 +12,7 @@ export interface Job {
     enriched_columns: string | null
     skipped_rows: number | null
     output_path: string | null
+    validation_findings: string | null
     error_message: string | null
     created_at: Date
     updated_at: Date
@@ -43,8 +44,19 @@ export async function completeJob(
         enrichedColumns: string[]
         skippedRows: number
         outputPath: string
+        validationFindings: {
+            errors: { column: string; issue: string; count: number }[]
+            warnings: { column: string; issue: string; count?: number }[]
+        }
     },
 ): Promise<void> {
+    const hasFindings =
+        fields.validationFindings.errors.length > 0 ||
+        fields.validationFindings.warnings.length > 0
+    const validationFindingsJson = hasFindings
+        ? JSON.stringify(fields.validationFindings)
+        : null
+
     await pool.query(
         `UPDATE jobs SET
             status = 'done',
@@ -54,8 +66,9 @@ export async function completeJob(
             enriched_columns = $4,
             skipped_rows = $5,
             output_path = $6,
+            validation_findings = $7,
             updated_at = NOW()
-        WHERE id = $7`,
+        WHERE id = $8`,
         [
             fields.rowCountBefore,
             fields.rowCountAfter,
@@ -63,6 +76,7 @@ export async function completeJob(
             fields.enrichedColumns.length > 0 ? fields.enrichedColumns.join(",") : null,
             fields.skippedRows,
             fields.outputPath,
+            validationFindingsJson,
             id,
         ],
     )

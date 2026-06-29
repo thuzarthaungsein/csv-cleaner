@@ -19,7 +19,7 @@ test("updateJobStatus advances status", async () => {
     assert.equal(fetched?.status, "validated")
 })
 
-test("completeJob sets final fields, output_path, and status done", async () => {
+test("completeJob sets final fields, output_path, validation findings, and status done", async () => {
     const job = await createJob("sample3.csv")
     await completeJob(job.id, {
         rowCountBefore: 10,
@@ -28,6 +28,10 @@ test("completeJob sets final fields, output_path, and status done", async () => 
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
         outputPath: "outputs/sample3_enriched.csv",
+        validationFindings: {
+            errors: [{ column: "*", issue: "duplicate_row", count: 2 }],
+            warnings: [{ column: "signup_date", issue: "type_mismatch" }],
+        },
     })
     const fetched = await getJob(job.id)
     assert.equal(fetched?.status, "done")
@@ -36,6 +40,25 @@ test("completeJob sets final fields, output_path, and status done", async () => 
     assert.equal(fetched?.enriched_columns, "region,cca3")
     assert.equal(fetched?.skipped_rows, 1)
     assert.equal(fetched?.output_path, "outputs/sample3_enriched.csv")
+    assert.deepEqual(JSON.parse(fetched?.validation_findings ?? "null"), {
+        errors: [{ column: "*", issue: "duplicate_row", count: 2 }],
+        warnings: [{ column: "signup_date", issue: "type_mismatch" }],
+    })
+})
+
+test("completeJob stores null validation_findings when there are no findings", async () => {
+    const job = await createJob("sample5.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 3,
+        rowCountAfter: 3,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+        outputPath: "outputs/sample5_cleaned.csv",
+        validationFindings: { errors: [], warnings: [] },
+    })
+    const fetched = await getJob(job.id)
+    assert.equal(fetched?.validation_findings, null)
 })
 
 test("failJob sets status failed and error_message", async () => {
