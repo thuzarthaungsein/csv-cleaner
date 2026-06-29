@@ -81,7 +81,7 @@ test("GET /report/:id includes a download link for a done job", async () => {
     const html = await res.text()
     assert.equal(res.status, 200)
     assert.ok(html.includes(`/report/${job.id}/download`))
-    assert.ok(html.includes("Download CSV"))
+    assert.ok(html.includes("Download Cleaned CSV"))
 })
 
 test("GET /report/:id shows not-enriched message instead of a misleading coverage chart", async () => {
@@ -211,7 +211,7 @@ test("GET /report/:id/fragment returns html and chartData for a done job", async
     assert.equal(res.status, 200)
     const body = await res.json()
     assert.ok(body.html.includes("fragment_job.csv"))
-    assert.ok(body.html.includes("Download CSV"))
+    assert.ok(body.html.includes("Download Cleaned CSV"))
     assert.ok(body.html.includes("coverageChart"))
     assert.deepEqual(body.chartData, {
         rowBefore: 10,
