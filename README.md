@@ -1,128 +1,123 @@
-# csv-cleaner
+# CSV Cleaner
 
-Hono + TypeScript ETL API. Uploads CSV → validates → cleans → enriches → serves chart report.
+**Live:** https://csv-cleaner-qrqn.onrender.com/
 
-## Pipeline
+## What is this?
 
-```
-POST /upload
-    │
-    ▼
-validator.ts ── schema checks: nulls, type mismatches, duplicate rows, row count
-    │             findings (errors + warnings) are recorded, never block the pipeline
-    ▼
-cleaner.ts ── DuckDB SQL: trim, normalize dates to ISO 8601, lowercase emails, dedupe, empty string → NULL
-    │
-    ▼
-enricher.ts ── optional join against country reference data if a country column is detected
-    │
-    ▼
-job.ts ── job metadata, status, row counts, and validation findings saved to Postgres
-    │
-    ▼
-GET /report/:id ── HTML report with summary table, validation findings, and Chart.js bar charts
-```
+CSV Cleaner is a free, browser-based tool that takes a messy CSV file and gives
+you back a cleaned-up version — plus a visual report showing what changed.
 
-Validation is informational, not a gate: clean and enrich always run, regardless of what
-`validator.ts` finds. Any findings (e.g. duplicate rows, an empty column) are persisted on
-the job and shown as rows in the report's summary table — errors in red, warnings in amber.
-`status: "failed"` is reserved for genuine pipeline errors (a file that can't be read, a
-database error, etc.), never for a validation finding.
+No installation, no account, no command line. Just open the site, upload a
+file, and see the results.
 
-## Setup
+## Screenshots
 
-1. Copy `.env.example` to `.env` and adjust if needed:
-   ```bash
-   cp .env.example .env
-   ```
-2. Start Postgres:
-   ```bash
-   docker compose up -d
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Run in dev mode:
-   ```bash
-   npm run dev
-   ```
+| Desktop                                      | Mobile                                       |
+| -------------------------------------------- | -------------------------------------------- |
+| **Landing page — upload form**               | **Landing page — upload form**               |
+| ![Landing page (desktop)](screenshots/1.png) | ![Landing page (mobile)](screenshots/3.png)  |
+| **After upload — summary report and charts** | **After upload — summary report and charts** |
+| ![Report view (desktop)](screenshots/2.png)  | ![Report view (mobile)](screenshots/4.png)   |
 
-`npm run dev` and `npm test` both load environment variables from `.env` via `--env-file=.env`, so step 1 is required before either command will pick up your config.
+## What you get
 
-## Environment variables
+When you upload a CSV, the tool automatically:
 
-Copy `.env.example` to `.env` and fill in your own values — see the Setup section above.
+1. **Checks your data for problems** — empty columns, mostly-empty columns,
+   duplicate rows, and columns that look like they should be numbers or dates
+   but have stray text in them.
+2. **Cleans it up** — trims extra whitespace, fixes inconsistent date formats,
+   lowercases email addresses, removes exact duplicate rows, and turns empty
+   text into proper blanks.
+3. **Enriches it (if it's about countries)** — if your file has a column with
+   country names or country codes, the tool automatically looks each one up
+   and adds region and ISO code information.
+4. **Shows you a report** — row counts before and after cleaning, what got
+   enriched, and easy-to-read charts.
+5. **Lets you download the cleaned file** — one click to get the finished CSV.
 
-| Variable            | Description                             |
-| ------------------- | --------------------------------------- |
-| `DATABASE_URL`      | Postgres connection string used by `pg` |
-| `PORT`              | Port the Hono server listens on         |
-| `POSTGRES_USER`     | Postgres DB username                    |
-| `POSTGRES_PASSWORD` | Postgres DB user password               |
+You can upload as many files as you like, one at a time.
 
-## Testing
+## Step by Step
 
-```bash
-npm test
-```
+### 1. Open the site
 
-Requires Postgres running (`docker compose up -d`) since the repository tests hit a real database. `npm test` loads `.env` automatically via `--env-file=.env`.
+Go to **https://csv-cleaner-qrqn.onrender.com/** in any web browser (Chrome, Safari, Firefox, Edge —
+no extensions or sign-in needed).
 
-## Usage
+### 2. Choose your CSV file
 
-### Health check
+You'll see a dashed box in the middle of the page. Either:
 
-```bash
-curl http://localhost:3000/health
-```
+- **Drag your CSV file** from your computer and drop it onto the box, or
+- **Click the box** to open a file picker and select your CSV file.
 
-Response:
+Once a file is selected, the box turns green and shows the filename and size.
 
-```json
-{ "status": "ok" }
-```
+### 3. Click "Upload"
 
-### Upload a CSV
+The button becomes active once a file is selected. Click it. You'll see a
+spinner and "Processing..." while the tool checks and cleans your file — this
+usually takes a few seconds.
 
-```bash
-curl -X POST -F "file=@path/to/your.csv" http://localhost:3000/upload
-```
+### 4. See your report
 
-Success response (HTTP 200):
+The page updates (no reload, no new tab) to show:
 
-```json
-{ "jobId": 1, "status": "done", "fileName": "1718999999999_your.csv" }
-```
+- A **status badge** (Done)
+- A **summary table**: filename, row counts before/after, which columns got
+  enriched, how many rows were skipped
+- **Validation findings**, if any were found — for example a duplicate-row
+  count or an empty column — shown as extra rows in the summary table (in red
+  for more serious issues, amber for minor ones). Your file still gets
+  cleaned even when findings are present; the findings are just there to tell
+  you what was found and (where applicable) fixed.
+- **Two charts**: one comparing row counts before and after cleaning, and one
+  showing what percentage of rows were successfully enriched (if applicable)
+- A **"Download Cleaned CSV" button** — click it to save the finished file to
+  your computer
 
-If the pipeline hits a genuine error (a file that can't be read, a database error, etc.),
-the endpoint returns **HTTP 500** with an `errorMessage` field instead:
+### 5. If something goes wrong
 
-```json
-{
-  "jobId": 2,
-  "status": "failed",
-  "fileName": "1718999999999_bad.csv",
-  "errorMessage": "ENOENT: no such file or directory, open 'uploads/...'"
-}
-```
+A red error message appears on the same page only if something genuinely
+prevents processing — for example the server couldn't read the uploaded
+file. Data-quality issues in your CSV (duplicate rows, an empty column, and
+so on) do **not** stop processing — they're cleaned where possible and shown
+as findings in the report instead (see step 4). The Upload button becomes
+available again after either outcome so you can try another file.
 
-A CSV with validation findings (e.g. duplicate rows, an empty column) still completes
-successfully — `status: "done"` — with the findings visible in the report at
-`GET /report/:id` rather than blocking the upload.
+### 6. Upload another file
 
-### View the report
+No need to reload the page. Just select a new file and click Upload again.
 
-```bash
-curl http://localhost:3000/report/1
-```
+## What kind of CSV file works best?
 
-Or open `http://localhost:3000/report/1` in a browser for the full Tailwind + Chart.js report.
+Any CSV works — there's no required column names or fixed format, and the
+tool always tries to clean and process your file rather than rejecting it
+outright. A few things to know:
 
-![CSV Cleaner Report](docs/report.png)
+- **Completely empty columns** (every row blank) are flagged as a finding in
+  your report, but your file still gets processed — the empty column just
+  stays empty in the cleaned output.
+- **Fully duplicate rows** (two or more rows identical in every column) are
+  automatically removed during cleaning, and the report tells you how many
+  duplicate rows were found and removed.
+- **Country enrichment** only happens automatically if one of your columns is
+  named something like `country`, `country_name`, `country_code`, `iso_code`,
+  `iso2`, or `iso3` and contains country names or ISO codes.
+- There's no file size limit built into the tool itself, but very large files
+  will simply take longer to process.
 
-> Sample report showing before/after row counts and country enrichment coverage.
+## A note on file storage
 
-## Enrichment notes
+This is a demo deployment. Uploaded files and cleaned results are **not
+stored permanently** — if the server restarts (which can happen automatically
+on the free hosting tier after periods of inactivity), previously uploaded
+files and their reports are not preserved. Always download your cleaned CSV
+right away if you want to keep it.
 
-Country enrichment fetches reference data from `raw.githubusercontent.com/mledoze/countries` (a static JSON dataset). The API originally targeted `restcountries.com`, but that service is currently deprecated/broken, so the enricher was switched to the mledoze/countries dataset instead. Enrichment is entirely optional — if no country column is detected in the CSV, or if the country data fetch fails at startup, enrichment is skipped gracefully and the rest of the pipeline proceeds unaffected.
+## Questions or issues?
+
+This is a demo project. If something doesn't work as described above, the
+underlying code and technical documentation are in this repository's
+[Flow&Setup](docs/FLOW_SETUP.md).
