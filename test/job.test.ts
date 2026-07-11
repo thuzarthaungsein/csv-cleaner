@@ -19,7 +19,7 @@ test("updateJobStatus advances status", async () => {
     assert.equal(fetched?.status, "validated")
 })
 
-test("completeJob sets final fields, output_path, validation findings, and status done", async () => {
+test("completeJob sets final fields, output_path, enriched_output_path, validation findings, and status done", async () => {
     const job = await createJob("sample3.csv")
     await completeJob(job.id, {
         rowCountBefore: 10,
@@ -27,7 +27,8 @@ test("completeJob sets final fields, output_path, validation findings, and statu
         enrichedApi: "restcountries.com/v3.1",
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
-        outputPath: "outputs/sample3_enriched.csv",
+        outputPath: "outputs/sample3_cleaned.csv",
+        enrichedOutputPath: "outputs/sample3_enriched.csv",
         validationFindings: {
             errors: [{ column: "*", issue: "duplicate_row", count: 2 }],
             warnings: [{ column: "signup_date", issue: "type_mismatch" }],
@@ -39,7 +40,8 @@ test("completeJob sets final fields, output_path, validation findings, and statu
     assert.equal(fetched?.row_count_after, 8)
     assert.equal(fetched?.enriched_columns, "region,cca3")
     assert.equal(fetched?.skipped_rows, 1)
-    assert.equal(fetched?.output_path, "outputs/sample3_enriched.csv")
+    assert.equal(fetched?.output_path, "outputs/sample3_cleaned.csv")
+    assert.equal(fetched?.enriched_output_path, "outputs/sample3_enriched.csv")
     assert.deepEqual(JSON.parse(fetched?.validation_findings ?? "null"), {
         errors: [{ column: "*", issue: "duplicate_row", count: 2 }],
         warnings: [{ column: "signup_date", issue: "type_mismatch" }],
@@ -55,6 +57,7 @@ test("completeJob stores null validation_findings when there are no findings", a
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/sample5_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: { errors: [], warnings: [] },
     })
     const fetched = await getJob(job.id)

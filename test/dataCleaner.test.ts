@@ -70,7 +70,7 @@ test("runPipeline persists the cleaned output path when enrichment did not run",
     }
 })
 
-test("runPipeline persists the enriched output path when enrichment ran", async () => {
+test("runPipeline keeps the cleaned output path as the primary download and stores the enriched path separately", async () => {
     const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
     const uploadPath = join(uploadDir, "valid_with_country.csv")
     await copyFile("test/fixtures/valid_with_country.csv", uploadPath)
@@ -82,7 +82,32 @@ test("runPipeline persists the enriched output path when enrichment ran", async 
         assert.equal(result.status, "done")
         const job = await getJob(result.jobId)
         assert.ok(job?.output_path)
-        assert.ok(job?.output_path?.endsWith("_enriched.csv"))
+        assert.ok(job?.output_path?.endsWith("_cleaned.csv"))
+        assert.ok(job?.enriched_output_path)
+        assert.ok(job?.enriched_output_path?.endsWith("_enriched.csv"))
+    } finally {
+        await rm(uploadDir, { recursive: true, force: true })
+    }
+})
+
+test("runPipeline cleaned download never contains enrichment columns", async () => {
+    const uploadDir = await mkdtemp(join(tmpdir(), "csv-cleaner-upload-"))
+    const uploadPath = join(uploadDir, "valid_with_country.csv")
+    await copyFile("test/fixtures/valid_with_country.csv", uploadPath)
+
+    try {
+        const cache = buildCountryCache(FIXTURE_COUNTRIES)
+        const result = await runPipeline(uploadPath, cache)
+        assert.equal(result.status, "done")
+
+        const job = await getJob(result.jobId)
+        assert.ok(job?.output_path)
+
+        const { readFile } = await import("node:fs/promises")
+        const cleanedContent = await readFile(job!.output_path!, "utf-8")
+        const header = cleanedContent.split("\n")[0]
+        assert.ok(!header.includes("region"))
+        assert.ok(!header.includes("cca3"))
     } finally {
         await rm(uploadDir, { recursive: true, force: true })
     }

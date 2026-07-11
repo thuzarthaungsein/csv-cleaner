@@ -14,8 +14,8 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function buildDownloadFileName(job: Job): string {
-  return basename(job.output_path!);
+function buildDownloadFileName(path: string): string {
+  return basename(path);
 }
 
 interface ValidationFinding {
@@ -105,6 +105,7 @@ function renderReportFragment(job: Job): {
   const rowAfter = job.row_count_after ?? 0;
   const skipped = job.skipped_rows ?? 0;
   const wasEnriched = job.enriched_columns !== null;
+  const hasEnrichedDownload = job.enriched_output_path !== null;
   const coverage =
     wasEnriched && rowAfter > 0
       ? Math.round(((rowAfter - skipped) / rowAfter) * 100)
@@ -158,7 +159,14 @@ function renderReportFragment(job: Job): {
         </div>
         </div>
         
+        <div class="flex flex-col sm:flex-row gap-3">
         <a href="/report/${job.id}/download" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 transition-colors">Download Cleaned CSV</a>
+        ${
+          hasEnrichedDownload
+            ? `<a href="/report/${job.id}/download/enriched" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold shadow hover:bg-green-700 transition-colors">Download Enriched CSV</a>`
+            : ""
+        }
+        </div>
         `;
 
   return { html, chartData: { rowBefore, rowAfter, wasEnriched, coverage } };
@@ -258,11 +266,35 @@ export function buildReportRoute() {
       return c.json({ error: "output file not found" }, 404);
     }
 
-    const fileName = buildDownloadFileName(job);
+    const fileName = buildDownloadFileName(job.output_path);
     c.header("Content-Type", "text/csv");
     c.header("Content-Disposition", `attachment; filename="${fileName}"`);
 
     const nodeStream = createReadStream(job.output_path);
+    return c.body(Readable.toWeb(nodeStream) as ReadableStream);
+  });
+
+  route.get("/:id/download/enriched", async (c) => {
+    const id = Number(c.req.param("id"));
+    const job = await getJob(id);
+
+    if (!job) {
+      return c.json({ error: "job not found" }, 404);
+    }
+
+    if (job.status !== "done" || !job.enriched_output_path) {
+      return c.json({ error: "enriched output not available" }, 400);
+    }
+
+    if (!existsSync(job.enriched_output_path)) {
+      return c.json({ error: "output file not found" }, 404);
+    }
+
+    const fileName = buildDownloadFileName(job.enriched_output_path);
+    c.header("Content-Type", "text/csv");
+    c.header("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    const nodeStream = createReadStream(job.enriched_output_path);
     return c.body(Readable.toWeb(nodeStream) as ReadableStream);
   });
 

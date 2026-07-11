@@ -12,6 +12,7 @@ export interface Job {
     enriched_columns: string | null
     skipped_rows: number | null
     output_path: string | null
+    enriched_output_path: string | null
     validation_findings: string | null
     error_message: string | null
     created_at: Date
@@ -44,6 +45,7 @@ export async function completeJob(
         enrichedColumns: string[]
         skippedRows: number
         outputPath: string
+        enrichedOutputPath: string | null
         validationFindings: {
             errors: { column: string; issue: string; count: number }[]
             warnings: { column: string; issue: string; count?: number }[]
@@ -66,9 +68,10 @@ export async function completeJob(
             enriched_columns = $4,
             skipped_rows = $5,
             output_path = $6,
-            validation_findings = $7,
+            enriched_output_path = $7,
+            validation_findings = $8,
             updated_at = NOW()
-        WHERE id = $8`,
+        WHERE id = $9`,
         [
             fields.rowCountBefore,
             fields.rowCountAfter,
@@ -76,6 +79,7 @@ export async function completeJob(
             fields.enrichedColumns.length > 0 ? fields.enrichedColumns.join(",") : null,
             fields.skippedRows,
             fields.outputPath,
+            fields.enrichedOutputPath,
             validationFindingsJson,
             id,
         ],

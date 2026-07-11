@@ -50,7 +50,8 @@ test("GET /report/:id renders charts and summary table for a done job", async ()
         enrichedApi: "restcountries.com/v3.1",
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
-        outputPath: "outputs/done_job_cleaned_enriched.csv",
+        outputPath: "outputs/done_job_cleaned.csv",
+        enrichedOutputPath: "outputs/done_job_cleaned_enriched.csv",
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -73,7 +74,8 @@ test("GET /report/:id includes a download link for a done job", async () => {
         enrichedApi: "mledoze/countries",
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
-        outputPath: "outputs/downloadable_job_enriched.csv",
+        outputPath: "outputs/downloadable_job_cleaned.csv",
+        enrichedOutputPath: "outputs/downloadable_job_cleaned_enriched.csv",
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -82,6 +84,8 @@ test("GET /report/:id includes a download link for a done job", async () => {
     assert.equal(res.status, 200)
     assert.ok(html.includes(`/report/${job.id}/download`))
     assert.ok(html.includes("Download Cleaned CSV"))
+    assert.ok(html.includes(`/report/${job.id}/download/enriched`))
+    assert.ok(html.includes("Download Enriched CSV"))
 })
 
 test("GET /report/:id shows not-enriched message instead of a misleading coverage chart", async () => {
@@ -96,6 +100,7 @@ test("GET /report/:id shows not-enriched message instead of a misleading coverag
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/no_country_job_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -124,12 +129,32 @@ test("GET /report/:id/download returns 400 for a job that is not done", async ()
     assert.equal(res.status, 400)
 })
 
+test("GET /report/:id/download/enriched returns 400 when the job completed without enrichment", async () => {
+    const app = new Hono()
+    app.route("/report", buildReportRoute())
+
+    const job = await createJob("no_enrichment_download.csv")
+    await completeJob(job.id, {
+        rowCountBefore: 3,
+        rowCountAfter: 3,
+        enrichedApi: null,
+        enrichedColumns: [],
+        skippedRows: 0,
+        outputPath: "outputs/no_enrichment_download_cleaned.csv",
+        enrichedOutputPath: null,
+        validationFindings: { errors: [], warnings: [] },
+    })
+
+    const res = await app.request(`/report/${job.id}/download/enriched`)
+    assert.equal(res.status, 400)
+})
+
 test("GET /report/:id/download streams the output file with correct headers", async () => {
     const app = new Hono()
     app.route("/report", buildReportRoute())
 
     await mkdir("outputs", { recursive: true })
-    const outputPath = "outputs/download_test_enriched.csv"
+    const outputPath = "outputs/download_test_cleaned.csv"
     await writeFile(outputPath, "id,name\n1,Alice\n")
 
     const job = await createJob("download_test.csv")
@@ -140,6 +165,7 @@ test("GET /report/:id/download streams the output file with correct headers", as
         enrichedColumns: ["region", "cca3"],
         skippedRows: 0,
         outputPath,
+        enrichedOutputPath: "outputs/download_test_enriched.csv",
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -147,7 +173,7 @@ test("GET /report/:id/download streams the output file with correct headers", as
         const res = await app.request(`/report/${job.id}/download`)
         assert.equal(res.status, 200)
         assert.equal(res.headers.get("content-type"), "text/csv")
-        assert.ok(res.headers.get("content-disposition")?.includes("download_test_enriched.csv"))
+        assert.ok(res.headers.get("content-disposition")?.includes("download_test_cleaned.csv"))
         const body = await res.text()
         assert.equal(body, "id,name\n1,Alice\n")
     } finally {
@@ -167,6 +193,7 @@ test("GET /report/:id/download returns 404 when the output file is missing from 
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/this_file_does_not_exist_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -203,7 +230,8 @@ test("GET /report/:id/fragment returns html and chartData for a done job", async
         enrichedApi: "mledoze/countries",
         enrichedColumns: ["region", "cca3"],
         skippedRows: 1,
-        outputPath: "outputs/fragment_job_cleaned_enriched.csv",
+        outputPath: "outputs/fragment_job_cleaned.csv",
+        enrichedOutputPath: "outputs/fragment_job_cleaned_enriched.csv",
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -233,6 +261,7 @@ test("GET /report/:id/fragment reflects not-enriched jobs in chartData", async (
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/fragment_not_enriched_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -261,6 +290,7 @@ test("GET /report/:id shows validation error and warning rows when findings are 
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/findings_job_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: {
             errors: [{ column: "*", issue: "duplicate_row", count: 2 }],
             warnings: [{ column: "signup_date", issue: "type_mismatch" }],
@@ -288,6 +318,7 @@ test("GET /report/:id shows no findings rows when validation_findings is null", 
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/clean_job_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: { errors: [], warnings: [] },
     })
 
@@ -311,6 +342,7 @@ test("GET /report/:id shows an empty_column finding with the column name", async
         enrichedColumns: [],
         skippedRows: 0,
         outputPath: "outputs/empty_col_job_cleaned.csv",
+        enrichedOutputPath: null,
         validationFindings: {
             errors: [{ column: "notes", issue: "empty_column", count: 3 }],
             warnings: [],
