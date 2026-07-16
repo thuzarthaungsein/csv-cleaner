@@ -40,6 +40,13 @@ function renderLandingPage(): string {
         </div>
 
         <div class="bg-white rounded-xl shadow p-6 border border-gray-100">
+            <div class="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-gray-700 space-y-2">
+                <p><span class="font-semibold text-gray-900">What to upload:</span> any CSV file with a header row. Column names and order don't matter — the tool inspects your file's actual columns.</p>
+                <p><span class="font-semibold text-gray-900">What gets validated:</span> fully empty columns and duplicate rows are flagged as errors, and columns more than half empty, columns named like a date, and text columns that look mostly numeric are flagged as warnings. Validation never blocks your upload — findings are shown in the report.</p>
+                <p><span class="font-semibold text-gray-900">What gets cleaned:</span> emails are trimmed and lowercased, dates are normalized, blank values become empty, and duplicate rows are removed.</p>
+                <p><span class="font-semibold text-gray-900">Optional enrichment:</span> if your CSV has a country column (<code class="font-mono text-xs bg-white px-1 py-0.5 rounded border border-blue-200">country</code>, <code class="font-mono text-xs bg-white px-1 py-0.5 rounded border border-blue-200">country_name</code>, <code class="font-mono text-xs bg-white px-1 py-0.5 rounded border border-blue-200">country_code</code>, <code class="font-mono text-xs bg-white px-1 py-0.5 rounded border border-blue-200">iso_code</code>, <code class="font-mono text-xs bg-white px-1 py-0.5 rounded border border-blue-200">iso2</code>, or <code class="font-mono text-xs bg-white px-1 py-0.5 rounded border border-blue-200">iso3</code>), region and ISO-3 columns are added to a separate enriched download — your cleaned file always keeps only your original columns.</p>
+            </div>
+
             <div id="dropzone" class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer transition-colors">
                 <div id="dropzoneIdle">
                     <div class="text-3xl mb-2">&#8593;</div>

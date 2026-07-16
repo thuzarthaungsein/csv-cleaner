@@ -23,5 +23,5 @@
 ## Top 3 things to fix
 
 - [x] **Bug:** validation error messages reference enrichment columns (region, cca3) that don't exist in the user's original CSV — validator must only report on columns present in the uploaded file
-- [ ] **Improvement:** add a description/onboarding section on the upload page explaining what the tool does, what CSV formats work, and what gets validated
+- [x] **Improvement:** add a description/onboarding section on the upload page explaining what the tool does, what CSV formats work, and what gets validated
 - [ ] **Improvement:** expand validation to flag columns with partial nulls (e.g. >50% empty) as warnings, not just fully empty columns

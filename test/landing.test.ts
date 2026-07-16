@@ -15,3 +15,15 @@ test("GET / returns the landing page with the upload form", async () => {
     assert.ok(html.includes('id="uploadButton"'))
     assert.ok(html.includes("tailwindcss"))
 })
+
+test("GET / includes onboarding copy describing what to upload and what gets validated", async () => {
+    const app = new Hono()
+    app.route("/", buildLandingRoute())
+
+    const res = await app.request("/")
+    const html = await res.text()
+    assert.ok(html.includes("What to upload"))
+    assert.ok(html.includes("What gets validated"))
+    assert.ok(html.includes("What gets cleaned"))
+    assert.ok(html.includes("Optional enrichment"))
+})
