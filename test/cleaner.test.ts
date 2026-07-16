@@ -35,3 +35,21 @@ test("cleanCsv only lowercases columns that exactly match email/e_mail/email_add
         await rm(outputDir, { recursive: true, force: true })
     }
 })
+
+test("cleanCsv preserves original row order after deduping", async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), "csv-cleaner-test-"))
+    try {
+        const result = await cleanCsv("test/fixtures/dirty.csv", outputDir)
+        const contents = await readFile(result.outputPath, "utf-8")
+
+        const ids = contents
+            .trim()
+            .split("\n")
+            .slice(1)
+            .map((line) => Number(line.split(",")[0]))
+
+        assert.deepEqual(ids, [1, 2, 3, 4])
+    } finally {
+        await rm(outputDir, { recursive: true, force: true })
+    }
+})

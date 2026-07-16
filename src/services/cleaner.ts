@@ -54,10 +54,17 @@ export async function cleanCsv(filePath: string, outputDir: string): Promise<Cle
         const outputPath = join(outputDir, `${baseName}_cleaned.csv`)
         const escapedOutput = outputPath.replace(/'/g, "''")
 
+        const outputColumns = columnNames.map(quoteIdent).join(", ")
+
         await db.exec(`
             COPY (
-                SELECT DISTINCT ${selectParts.join(", ")}
-                FROM read_csv_auto('${escapedInput}')
+                SELECT ${outputColumns}
+                FROM (
+                    SELECT ${selectParts.join(", ")}, ROW_NUMBER() OVER () AS __rn
+                    FROM read_csv_auto('${escapedInput}')
+                )
+                QUALIFY ROW_NUMBER() OVER (PARTITION BY ${outputColumns} ORDER BY __rn) = 1
+                ORDER BY __rn
             ) TO '${escapedOutput}' (HEADER, DELIMITER ',')
         `)
 
