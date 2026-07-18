@@ -34,7 +34,9 @@ When you upload a CSV, the tool automatically:
    and adds region and ISO code information.
 4. **Shows you a report** — row counts before and after cleaning, what got
    enriched, and easy-to-read charts.
-5. **Lets you download the cleaned file** — one click to get the finished CSV.
+5. **Lets you download the cleaned file** — one click to get the finished CSV,
+   with only your original columns. If enrichment ran, a second button lets
+   you download an enriched version with the added region/ISO columns.
 
 You can upload as many files as you like, one at a time.
 
@@ -75,7 +77,9 @@ The page updates (no reload, no new tab) to show:
 - **Two charts**: one comparing row counts before and after cleaning, and one
   showing what percentage of rows were successfully enriched (if applicable)
 - A **"Download Cleaned CSV" button** — click it to save the finished file to
-  your computer
+  your computer, with only the columns from your original upload
+- A **"Download Enriched CSV" button**, shown only if country enrichment ran
+  — the same file plus the added region and ISO code columns
 
 ### 5. If something goes wrong
 
