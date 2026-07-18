@@ -12,12 +12,21 @@ file, and see the results.
 
 ## Screenshots
 
-| Desktop                                      | Mobile                                       |
-| -------------------------------------------- | -------------------------------------------- |
-| **Landing page — upload form**               | **Landing page — upload form**               |
-| ![Landing page (desktop)](screenshots/1.png) | ![Landing page (mobile)](screenshots/3.png)  |
-| **After upload — summary report and charts** | **After upload — summary report and charts** |
-| ![Report view (desktop)](screenshots/2.png)  | ![Report view (mobile)](screenshots/4.png)   |
+The app supports both light and dark mode (see [step 1](#1-open-the-site) below).
+
+### Landing page — upload form
+
+| View    | Light                                                        | Dark                                                      |
+| ------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
+| Desktop | ![Landing page — light desktop](screenshots/light-desktop-0.png) | ![Landing page — dark desktop](screenshots/dark-desktop-0.png) |
+| Mobile  | ![Landing page — light mobile](screenshots/light-mobile-0.png)   | ![Landing page — dark mobile](screenshots/dark-mobile-0.png)   |
+
+### After upload — summary report and charts
+
+| View    | Light                                                       | Dark                                                     |
+| ------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+| Desktop | ![Report view — light desktop](screenshots/light-desktop-1.png) | ![Report view — dark desktop](screenshots/dark-desktop-1.png) |
+| Mobile  | ![Report view — light mobile](screenshots/light-mobile-1.png)   | ![Report view — dark mobile](screenshots/dark-mobile-1.png)   |
 
 ## What you get
 
