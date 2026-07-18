@@ -77,6 +77,7 @@ function renderInProgress(job: Job): string {
     <meta charset="utf-8">
     <title>Job ${job.id} - ${status}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script data-goatcounter="https://csv-cleaner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body class="bg-gray-50 p-8">
     <div class="max-w-xl mx-auto bg-white rounded-lg shadow p-6">
@@ -206,6 +207,7 @@ function renderDone(job: Job): string {
     <title>Report - Job ${job.id}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script data-goatcounter="https://csv-cleaner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body class="bg-gray-50 p-8">
     <div class="max-w-5xl mx-auto space-y-6">${html}

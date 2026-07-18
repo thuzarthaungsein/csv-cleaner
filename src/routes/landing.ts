@@ -8,6 +8,7 @@ function renderLandingPage(): string {
     <title>CSV Cleaner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script data-goatcounter="https://csv-cleaner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body class="bg-gray-50 p-8">
     <div class="max-w-3xl mx-auto space-y-6">
