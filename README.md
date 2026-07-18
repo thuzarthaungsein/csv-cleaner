@@ -47,6 +47,9 @@ You can upload as many files as you like, one at a time.
 Go to **https://csv-cleaner-qrqn.onrender.com/** in any web browser (Chrome, Safari, Firefox, Edge —
 no extensions or sign-in needed).
 
+The site automatically matches your device's light or dark mode setting — there's
+no in-app switch, it just follows whatever your OS/browser is already set to.
+
 ### 2. Choose your CSV file
 
 You'll see a dashed box in the middle of the page. Either:
