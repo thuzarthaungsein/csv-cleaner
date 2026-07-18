@@ -39,8 +39,8 @@ const ISSUE_LABELS: Record<string, string> = {
 
 function describeFinding(finding: ValidationFinding): string {
   const label = ISSUE_LABELS[finding.issue] ?? finding.issue;
-  const columnPart = finding.column === "*" ? "" : ` — ${escapeHtml(finding.column)}`;
-  const countPart = finding.count !== undefined ? ` (${finding.count})` : "";
+  const columnPart = finding.column === "*" ? "" : ` — <span class="font-mono">${escapeHtml(finding.column)}</span>`;
+  const countPart = finding.count !== undefined ? ` (<span class="font-mono">${finding.count}</span>)` : "";
   return `${label}${columnPart}${countPart}`;
 }
 
@@ -53,13 +53,13 @@ function renderFindingsRows(job: Job): string {
   const errorRows = findings.errors
     .map(
       (finding) =>
-        `<tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Validation</th><td class="p-3 px-5 text-red-600 font-medium">${describeFinding(finding)}</td></tr>`,
+        `<tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Validation</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-red-600 dark:text-red-400 font-medium">${describeFinding(finding)}</td></tr>`,
     )
     .join("");
   const warningRows = findings.warnings
     .map(
       (finding) =>
-        `<tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Validation</th><td class="p-3 px-5 text-amber-600 font-medium">${describeFinding(finding)}</td></tr>`,
+        `<tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Validation</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-amber-600 dark:text-amber-400 font-medium">${describeFinding(finding)}</td></tr>`,
     )
     .join("");
 
@@ -79,11 +79,11 @@ function renderInProgress(job: Job): string {
     <script src="https://cdn.tailwindcss.com"></script>
     <script data-goatcounter="https://csv-cleaner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
-<body class="bg-gray-50 p-8">
-    <div class="max-w-xl mx-auto bg-white rounded-lg shadow p-6">
-        <h1 class="text-xl font-bold mb-2">Job ${job.id}: ${fileName}</h1>
-        <p class="text-gray-600">Status: <span class="font-mono">${status}</span></p>
-        ${job.status === "failed" ? `<p class="text-red-600 mt-4">${errorMessage}</p>` : ""}
+<body class="bg-slate-50 dark:bg-slate-950 p-4 sm:p-8">
+    <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 dark:shadow-none rounded-lg shadow p-6 border border-slate-200 dark:border-slate-800">
+        <h1 class="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">Job <span class="font-mono">${job.id}</span>: ${fileName}</h1>
+        <p class="text-slate-600 dark:text-slate-400">Status: <span class="font-mono">${status}</span></p>
+        ${job.status === "failed" ? `<p class="text-red-600 dark:text-red-400 mt-4">${errorMessage}</p>` : ""}
     </div>
 </body>
 </html>`;
@@ -114,57 +114,57 @@ function renderReportFragment(job: Job): {
   const enrichedColumns = escapeHtml(job.enriched_columns ?? "none");
   const statusBadgeClass =
     job.status === "done"
-      ? "bg-green-100 text-green-700"
+      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
       : job.status === "failed"
-        ? "bg-red-100 text-red-700"
-        : "bg-amber-100 text-amber-700";
+        ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+        : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400";
 
   const html = `
-        
 
-        <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
-            <div class="px-5 py-3 border-b border-gray-100 bg-gray-50">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Summary</h2>
+
+        <div class="bg-white dark:bg-slate-900 dark:shadow-none rounded-xl shadow overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Summary</h2>
             </div>
-            <table class="w-full text-left">
-                <tbody class="divide-y divide-gray-100">
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Status</th><td class="p-3 px-5 text-gray-900"><span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span></td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Filename</th><td class="p-3 px-5 text-gray-900 font-mono text-sm break-all">${fileName}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Row count before</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowBefore}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Row count after</th><td class="p-3 px-5 text-gray-900 font-semibold">${rowAfter}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Enriched columns</th><td class="p-3 px-5 text-gray-900">${enrichedColumns}</td></tr>
-                    <tr class="hover:bg-gray-50 transition-colors"><th class="p-3 px-5 text-sm font-medium text-gray-500 whitespace-nowrap w-px">Skipped rows</th><td class="p-3 px-5 text-red-600 font-semibold">${skipped}</td></tr>
+            <table class="w-full text-left block md:table">
+                <tbody class="block md:table-row-group divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Status</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-slate-900 dark:text-slate-100"><span class="px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wide ${statusBadgeClass}">${status}</span></td></tr>
+                    <tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Filename</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-slate-900 dark:text-slate-100 font-mono text-sm break-all">${fileName}</td></tr>
+                    <tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Row count before</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-slate-900 dark:text-slate-100 font-mono font-semibold">${rowBefore}</td></tr>
+                    <tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Row count after</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-slate-900 dark:text-slate-100 font-mono font-semibold">${rowAfter}</td></tr>
+                    <tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Enriched columns</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-slate-900 dark:text-slate-100 font-mono text-sm">${enrichedColumns}</td></tr>
+                    <tr class="block md:table-row hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors py-2 md:py-0"><th class="block md:table-cell px-5 pt-3 pb-0.5 md:p-3 md:px-5 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase md:normal-case tracking-wide md:tracking-normal md:whitespace-nowrap md:w-px">Skipped rows</th><td class="block md:table-cell px-5 pb-3 pt-0.5 md:p-3 md:px-5 text-red-600 dark:text-red-400 font-mono font-semibold">${skipped}</td></tr>
                     ${renderFindingsRows(job)}
                 </tbody>
             </table>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-lg shadow p-5 border border-gray-100">
+        <div class="bg-white dark:bg-slate-900 dark:shadow-none rounded-lg shadow p-5 border border-slate-200 dark:border-slate-800">
             <div class="flex items-center gap-2 mb-3">
-                <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Row Count</h2>
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 dark:bg-indigo-400"></span>
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Row Count</h2>
             </div>
             <canvas id="rowCountChart"></canvas>
         </div>
-        <div class="bg-white rounded-lg shadow p-5 border border-gray-100">
+        <div class="bg-white dark:bg-slate-900 dark:shadow-none rounded-lg shadow p-5 border border-slate-200 dark:border-slate-800">
             <div class="flex items-center gap-2 mb-3">
-                <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Enrichment Coverage</h2>
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500 dark:bg-green-400"></span>
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Enrichment Coverage</h2>
             </div>
             ${
               wasEnriched
                 ? `<canvas id="coverageChart"></canvas>`
-                : `<div class="flex items-center justify-center h-48 text-gray-400 italic text-sm">Not enriched (no country column detected)</div>`
+                : `<div class="flex items-center justify-center h-48 text-slate-400 dark:text-slate-600 italic text-sm">Not enriched (no country column detected)</div>`
             }
         </div>
         </div>
-        
+
         <div class="flex flex-col sm:flex-row gap-3">
-        <a href="/report/${job.id}/download" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 transition-colors">Download Cleaned CSV</a>
+        <a href="/report/${job.id}/download" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-indigo-700 dark:bg-indigo-500 text-white text-sm font-semibold shadow hover:bg-indigo-800 dark:hover:bg-indigo-400 transition-colors">Download Cleaned CSV</a>
         ${
           hasEnrichedDownload
-            ? `<a href="/report/${job.id}/download/enriched" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold shadow hover:bg-green-700 transition-colors">Download Enriched CSV</a>`
+            ? `<a href="/report/${job.id}/download/enriched" class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-green-600 dark:bg-green-500 text-white text-sm font-semibold shadow hover:bg-green-700 dark:hover:bg-green-400 transition-colors">Download Enriched CSV</a>`
             : ""
         }
         </div>
@@ -180,7 +180,7 @@ function buildChartScript(chartData: ReportChartData): string {
             type: "bar",
             data: {
                 labels: ["Before", "After"],
-                datasets: [{ label: "Row count", data: [${rowBefore}, ${rowAfter}], backgroundColor: ["#94a3b8", "#3b82f6"] }],
+                datasets: [{ label: "Row count", data: [${rowBefore}, ${rowAfter}], backgroundColor: ["#94a3b8", "#818CF8"] }],
             },
         })
         ${
@@ -189,7 +189,7 @@ function buildChartScript(chartData: ReportChartData): string {
             type: "bar",
             data: {
                 labels: ["Enrichment coverage %"],
-                datasets: [{ label: "Coverage", data: [${coverage}], backgroundColor: ["#22c55e"] }],
+                datasets: [{ label: "Coverage", data: [${coverage}], backgroundColor: ["#34d399"] }],
             },
             options: { scales: { y: { max: 100 } } },
         })`
@@ -209,7 +209,7 @@ function renderDone(job: Job): string {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script data-goatcounter="https://csv-cleaner.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
-<body class="bg-gray-50 p-8">
+<body class="bg-slate-50 dark:bg-slate-950 p-4 sm:p-8">
     <div class="max-w-5xl mx-auto space-y-6">${html}
     </div>
 
