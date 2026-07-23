@@ -10,7 +10,7 @@
         "test": "tsx --env-file=.env --test test/**/*.test.ts"
     },
     "dependencies": {
-        "@hono/node-server": "1.14.4",
+        "@hono/node-server": "2.0.10",
         "duckdb-async": "1.4.2",
         "hono": "4.12.26",
         "pg": "8.22.0"
